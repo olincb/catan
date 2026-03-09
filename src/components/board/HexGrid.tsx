@@ -10,7 +10,7 @@ import { GamePhase, TurnPhase, HarborType, PLAYER_COLORS } from "../../engine/ty
 import HexTile from "./HexTile";
 import VertexComponent from "./Vertex";
 import EdgeComponent from "./Edge";
-import Harbor from "./Harbor";
+import Harbor, { HARBOR_COLORS } from "./Harbor";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 
@@ -193,10 +193,14 @@ export default function HexGrid({ gameState }: HexGridProps) {
         );
       })}
 
-      {/* Harbors — render at edge midpoints between harbor vertex pairs, offset outward */}
+      {/* Harbors — dock lines + badges at edge midpoints */}
       {(() => {
-        // Find edges where both vertices share the same harbor type (these are harbor edges)
-        const harborEdges: { harbor: HarborType; mx: number; my: number }[] = [];
+        const harborData: {
+          harbor: HarborType;
+          mx: number; my: number;
+          v1x: number; v1y: number;
+          v2x: number; v2y: number;
+        }[] = [];
         for (const edge of gameState.board.edges) {
           const v1 = gameState.board.vertices[edge.vertexIds[0]];
           const v2 = gameState.board.vertices[edge.vertexIds[1]];
@@ -205,33 +209,44 @@ export default function HexGrid({ gameState }: HexGridProps) {
             const p2 = layout.vertexPixels.get(v2.id);
             if (!p1 || !p2) continue;
 
-            // Midpoint of the edge
             const mx = (p1.x + p2.x) / 2;
             const my = (p1.y + p2.y) / 2;
-
-            // Offset outward from board center
             const dx = mx;
             const dy = my;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
             const offsetDist = HEX_SIZE * 0.9;
 
-            harborEdges.push({
+            harborData.push({
               harbor: v1.harbor,
               mx: mx + (dx / dist) * offsetDist,
               my: my + (dy / dist) * offsetDist,
+              v1x: p1.x, v1y: p1.y,
+              v2x: p2.x, v2y: p2.y,
             });
           }
         }
 
-        return harborEdges.map((h, i) => (
-          <Harbor
-            key={`harbor-${i}`}
-            harborType={h.harbor}
-            cx={h.mx}
-            cy={h.my}
-            size={HEX_SIZE}
-          />
-        ));
+        return harborData.map((h, i) => {
+          const color = HARBOR_COLORS[h.harbor];
+          return (
+            <g key={`harbor-${i}`}>
+              {/* Dock lines from harbor badge to each vertex */}
+              <line
+                x1={h.mx} y1={h.my} x2={h.v1x} y2={h.v1y}
+                stroke={color} strokeWidth={2} strokeDasharray="4,3" opacity={0.7}
+              />
+              <line
+                x1={h.mx} y1={h.my} x2={h.v2x} y2={h.v2y}
+                stroke={color} strokeWidth={2} strokeDasharray="4,3" opacity={0.7}
+              />
+              {/* Small dock dots on the vertices */}
+              <circle cx={h.v1x} cy={h.v1y} r={4} fill={color} opacity={0.6} />
+              <circle cx={h.v2x} cy={h.v2y} r={4} fill={color} opacity={0.6} />
+              {/* Harbor badge */}
+              <Harbor harborType={h.harbor} cx={h.mx} cy={h.my} size={HEX_SIZE} />
+            </g>
+          );
+        });
       })()}
     </svg>
   );

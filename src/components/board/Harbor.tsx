@@ -16,7 +16,7 @@ const HARBOR_LABELS: Record<HarborType, { label: string; emoji: string }> = {
   [HarborType.OreHarbor]: { label: "2:1", emoji: "⛰️" },
 };
 
-const HARBOR_COLORS: Record<HarborType, string> = {
+export const HARBOR_COLORS: Record<HarborType, string> = {
   [HarborType.Generic]: "#3498db",
   [HarborType.BrickHarbor]: "#c0392b",
   [HarborType.LumberHarbor]: "#27ae60",

@@ -4,10 +4,29 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 import { PLAYER_COLORS } from "../../engine/types";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [text]);
+  return (
+    <button
+      onClick={handleCopy}
+      className="bg-gray-600 hover:bg-gray-500 text-white rounded px-2 py-1 text-sm transition-colors"
+      title="Copy room code"
+    >
+      {copied ? "✓" : "📋"}
+    </button>
+  );
+}
 
 export default function Lobby() {
   const { room, playerId, playerName, setPlayerName, error } = useGameStore();
@@ -108,11 +127,12 @@ export default function Lobby() {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="bg-gray-800 rounded-xl p-8 w-full max-w-md shadow-2xl">
         <h2 className="text-2xl font-bold text-white text-center mb-1">Waiting Room</h2>
-        <p className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-6">
           <span className="bg-gray-700 text-yellow-400 font-mono text-2xl tracking-[0.3em] px-4 py-1 rounded">
             {room.code}
           </span>
-        </p>
+          <CopyButton text={room.code} />
+        </div>
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-red-300 rounded p-2 mb-4 text-sm text-center">
