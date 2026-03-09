@@ -97,13 +97,13 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                 !canAffordRoad
-                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
                   : selectedAction === "road"
                     ? "bg-green-600 text-white"
                     : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
               disabled={!canAffordRoad}
-              title={!canAffordRoad ? "Need: 1 Brick, 1 Lumber" : "Place a road"}
+              title={!canAffordRoad ? "Need: 1🧱 1🪵" : "Road: 1🧱 1🪵"}
               onClick={() => setSelectedAction(selectedAction === "road" ? null : "road")}
             >
               🛤️ Road
@@ -111,13 +111,13 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                 !canAffordSettlement
-                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
                   : selectedAction === "settlement"
                     ? "bg-green-600 text-white"
                     : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
               disabled={!canAffordSettlement}
-              title={!canAffordSettlement ? "Need: 1 Brick, 1 Lumber, 1 Wool, 1 Grain" : "Place a settlement"}
+              title={!canAffordSettlement ? "Need: 1🧱 1🪵 1🐑 1🌾" : "Settlement: 1🧱 1🪵 1🐑 1🌾"}
               onClick={() => setSelectedAction(selectedAction === "settlement" ? null : "settlement")}
             >
               🏠 Settlement
@@ -125,13 +125,13 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                 !canAffordCity
-                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
                   : selectedAction === "city"
                     ? "bg-green-600 text-white"
                     : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
               disabled={!canAffordCity}
-              title={!canAffordCity ? "Need: 3 Ore, 2 Grain" : "Upgrade to a city"}
+              title={!canAffordCity ? "Need: 3⛰️ 2🌾" : "City: 3⛰️ 2🌾"}
               onClick={() => setSelectedAction(selectedAction === "city" ? null : "city")}
             >
               🏰 City
@@ -139,11 +139,11 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                 !canAffordDevCard
-                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
                   : "bg-purple-700 hover:bg-purple-600 text-white"
               }`}
               disabled={!canAffordDevCard}
-              title={!canAffordDevCard ? "Need: 1 Ore, 1 Wool, 1 Grain" : "Buy a development card"}
+              title={!canAffordDevCard ? "Need: 1⛰️ 1🐑 1🌾" : "Dev Card: 1⛰️ 1🐑 1🌾"}
               onClick={() => sendAction({ type: "BUY_DEVELOPMENT_CARD" })}
             >
               🃏 Development Card

@@ -70,7 +70,23 @@ export function joinRoom(
 ): { room: Room; playerId: string } | { error: string } {
   const room = rooms.get(code.toUpperCase());
   if (!room) return { error: "Room not found" };
-  if (room.gameId) return { error: "Game already in progress" };
+
+  // If game is in progress, check if this is a returning player
+  if (room.gameId) {
+    const existingPlayer = room.players.find(
+      (p) => p.name.toLowerCase() === playerName.toLowerCase()
+    );
+    if (!existingPlayer) {
+      return { error: "Game already in progress" };
+    }
+    // Rejoin as the existing player
+    const reconnectResult = reconnectPlayer(code, existingPlayer.id, socketId);
+    if ("error" in reconnectResult) {
+      return { error: reconnectResult.error };
+    }
+    return { room: reconnectResult.room, playerId: existingPlayer.id };
+  }
+
   if (room.players.length >= room.maxPlayers) return { error: "Room is full" };
   if (room.players.some((p) => p.socketId === socketId)) {
     return { error: "Already in this room" };

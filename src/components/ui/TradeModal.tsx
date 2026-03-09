@@ -153,30 +153,23 @@ export default function TradeModal({ gameState }: TradeModalProps) {
 
   if (!isMyTurn || !myPlayer) return null;
 
-  // Maritime trade buttons
-  const maritimeSection = (
-    <div className="mb-3">
-      <p className="text-xs text-gray-400 mb-1">Maritime Trade (bank):</p>
-      <div className="flex flex-wrap gap-1">
-        {Object.values(Resource).map((give) => {
-          if (myPlayer.resources[give] < 2) return null;
-          return Object.values(Resource).map((receive) => {
-            if (give === receive) return null;
-            if (myPlayer.resources[give] < 4) return null; // simplified check
-            return (
-              <button
-                key={`${give}-${receive}`}
-                className="bg-blue-900 hover:bg-blue-800 text-white py-0.5 px-1.5 rounded text-xs"
-                onClick={() => sendAction({ type: "MARITIME_TRADE", give, receive })}
-              >
-                4{RESOURCE_EMOJI[give]} → 1{RESOURCE_EMOJI[receive]}
-              </button>
-            );
-          });
-        })}
-      </div>
-    </div>
-  );
+  // Check if any maritime trades are available
+  const maritimeButtons: React.ReactNode[] = [];
+  for (const give of Object.values(Resource)) {
+    if (myPlayer.resources[give] < 4) continue;
+    for (const receive of Object.values(Resource)) {
+      if (give === receive) continue;
+      maritimeButtons.push(
+        <button
+          key={`${give}-${receive}`}
+          className="bg-blue-900 hover:bg-blue-800 text-white py-0.5 px-1.5 rounded text-xs"
+          onClick={() => sendAction({ type: "MARITIME_TRADE", give, receive })}
+        >
+          4{RESOURCE_EMOJI[give]} → 1{RESOURCE_EMOJI[receive]}
+        </button>
+      );
+    }
+  }
 
   // Other players for trade targeting
   const otherPlayers = gameState.players.filter((p) => p.id !== playerId);
@@ -229,7 +222,6 @@ export default function TradeModal({ gameState }: TradeModalProps) {
                   <input
                     type="number"
                     min={0}
-                    max={have}
                     value={offering[res] ?? 0}
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
@@ -298,13 +290,24 @@ export default function TradeModal({ gameState }: TradeModalProps) {
 
   return (
     <div className="bg-gray-800 rounded-lg p-3">
-      {maritimeSection}
+      <h3 className="text-yellow-400 font-bold mb-2">Trade</h3>
       <button
-        className="bg-yellow-600 hover:bg-yellow-700 text-white py-1.5 px-3 rounded text-sm font-medium w-full"
+        className="bg-yellow-600 hover:bg-yellow-700 text-white py-1.5 px-3 rounded text-sm font-medium w-full mb-2"
         onClick={() => setShowPropose(true)}
       >
-        🤝 Propose Trade
+        🤝 Propose Player Trade
       </button>
+      {maritimeButtons.length > 0 && (
+        <div>
+          <p className="text-xs text-gray-400 mb-1">Bank Trade (trade 4 of a resource for 1 of another):</p>
+          <div className="flex flex-wrap gap-1">
+            {maritimeButtons}
+          </div>
+        </div>
+      )}
+      {maritimeButtons.length === 0 && (
+        <p className="text-xs text-gray-500 italic">Bank trade available when you have 4+ of a resource</p>
+      )}
     </div>
   );
 }

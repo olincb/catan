@@ -123,6 +123,13 @@ function formatResourceGains(gains: Partial<Record<Resource, number>>): string {
     .join(" ");
 }
 
+function formatResources(resources: Partial<Record<Resource, number>>): string {
+  return Object.entries(resources)
+    .filter(([, amount]) => amount && amount > 0)
+    .map(([res, amount]) => `${amount}${RESOURCE_EMOJI[res as Resource] ?? res}`)
+    .join(" ");
+}
+
 function getCurrentPlayer(state: GameState): PlayerState {
   return state.players[state.currentPlayerIndex];
 }
@@ -747,7 +754,15 @@ function handleTradeResponse(
       return { success: false, error: result.error, state };
     }
     const playerName = result.state.players.find((p) => p.id === playerId)!.name;
-    log(result.state, `${playerName} accepted the trade`, playerId);
+    const trade = state.activeTradeOffer!;
+    if (trade.targetPlayerId) {
+      // Targeted trade executed
+      const proposerName = result.state.players.find((p) => p.id === trade.fromPlayerId)!.name;
+      log(result.state, `${proposerName} traded ${formatResources(trade.offering)} for ${formatResources(trade.requesting)} with ${playerName}`, playerId);
+    } else {
+      // Open trade — just recording acceptance
+      log(result.state, `${playerName} wants to trade`, playerId);
+    }
     return { success: true, state: result.state };
   }
 
@@ -789,7 +804,8 @@ function handleConfirmTrade(
 
   const proposerName = result.state.players.find((p) => p.id === playerId)!.name;
   const accepterName = result.state.players.find((p) => p.id === acceptingPlayerId)!.name;
-  log(result.state, `${proposerName} confirmed trade with ${accepterName}`, playerId);
+  const trade = state.activeTradeOffer!;
+  log(result.state, `${proposerName} traded ${formatResources(trade.offering)} for ${formatResources(trade.requesting)} with ${accepterName}`, playerId);
   return { success: true, state: result.state };
 }
 

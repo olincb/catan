@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/gameStore";
-import { useSocket } from "@/hooks/useSocket";
+import { useSocket, cancelReconnect } from "@/hooks/useSocket";
 import { useSoundManager } from "@/hooks/useSoundManager";
 import Lobby from "@/components/ui/Lobby";
 import HexGrid from "@/components/board/HexGrid";
@@ -107,13 +107,7 @@ export default function Home() {
           <p className="text-gray-400 text-sm mt-2">Please wait</p>
           <button
             className="mt-4 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-4 rounded text-sm transition-colors"
-            onClick={() => {
-              useGameStore.getState().setReconnecting(false);
-              try {
-                sessionStorage.removeItem("catan_roomCode");
-                sessionStorage.removeItem("catan_playerId");
-              } catch {}
-            }}
+            onClick={() => cancelReconnect()}
           >
             ← Back to Lobby
           </button>

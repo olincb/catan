@@ -34,7 +34,7 @@ export default function VertexComponent({
     if (building.type === BuildingType.Settlement) {
       // House shape: rectangular base with triangular roof
       const s = size * 0.35;
-      const points = `${cx - s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy} ${cx},${cy - s} ${cx - s*0.7},${cy}`;
+      const points = `${cx - s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy} ${cx},${cy - s*0.6} ${cx - s*0.7},${cy}`;
       return (
         <polygon
           points={points}

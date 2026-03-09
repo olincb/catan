@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useGameStore } from "../stores/gameStore";
 import type { GameAction } from "../engine/types";
@@ -36,6 +36,8 @@ function getSavedSession(): { roomCode: string; playerId: string } | null {
 }
 
 let globalSocket: Socket | null = null;
+let listenersInitialized = false;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 function getSocket(): Socket {
   if (!globalSocket) {
@@ -49,160 +51,143 @@ function getSocket(): Socket {
   return globalSocket;
 }
 
+// Singleton listener registration — called once, never cleaned up
+function initSocketListeners(socket: Socket): void {
+  if (listenersInitialized) return;
+  listenersInitialized = true;
+
+  const store = useGameStore.getState;
+
+  socket.on("connect", () => {
+    store().setConnected(true);
+
+    const saved = getSavedSession();
+    if (saved) {
+      store().setReconnecting(true);
+      socket.emit("reconnect_to_game", {
+        roomCode: saved.roomCode,
+        playerId: saved.playerId,
+      });
+
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        store().setReconnecting(false);
+        clearSession();
+        store().setError("Reconnection timed out. Please rejoin.");
+      }, 5000);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    store().setConnected(false);
+  });
+
+  // Room events
+  socket.on("room_created", ({ roomCode, playerId, room }) => {
+    store().setPlayerId(playerId);
+    store().setRoom(room);
+    saveSession(roomCode, playerId);
+  });
+
+  socket.on("room_joined", ({ roomCode, playerId, room }) => {
+    store().setPlayerId(playerId);
+    store().setRoom(room);
+    saveSession(roomCode, playerId);
+  });
+
+  socket.on("room_updated", ({ room }) => {
+    store().setRoom(room);
+  });
+
+  socket.on("player_joined", ({ room }) => {
+    store().setRoom(room);
+  });
+
+  socket.on("player_left", ({ room }) => {
+    store().setRoom(room);
+  });
+
+  // Game events
+  socket.on("game_started", ({ state }) => {
+    store().setGameState(state);
+  });
+
+  socket.on("game_state_updated", ({ state }) => {
+    store().setGameState(state);
+  });
+
+  // Reconnection response
+  socket.on("game_reconnected", ({ state, room }) => {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    store().setReconnecting(false);
+    store().setPlayerId(getSavedSession()?.playerId ?? null);
+    store().setRoom(room);
+    store().setGameState(state);
+  });
+
+  socket.on("action_error", ({ error }) => {
+    store().setError(error);
+  });
+
+  // Chat
+  socket.on("chat_message", (msg) => {
+    store().addChatMessage(msg);
+  });
+
+  // Errors
+  socket.on("error", ({ message }) => {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    store().setReconnecting(false);
+    clearSession();
+    store().setError(message);
+  });
+
+  socket.on("connect_error", () => {
+    store().setError("Connection lost. Reconnecting...");
+  });
+}
+
+/** Cancel an in-progress reconnection attempt and return to lobby */
+export function cancelReconnect(): void {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  useGameStore.getState().setReconnecting(false);
+  clearSession();
+}
+
 export function useSocket() {
-  const {
-    setConnected,
-    setPlayerId,
-    setRoom,
-    setGameState,
-    addChatMessage,
-    setError,
-    setReconnecting,
-  } = useGameStore();
-
-  const socketRef = useRef<Socket | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const socket = getSocket();
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      setConnected(true);
-
-      // Auto-reconnect if we have saved session credentials
-      const saved = getSavedSession();
-      if (saved) {
-        setReconnecting(true);
-        socket.emit("reconnect_to_game", {
-          roomCode: saved.roomCode,
-          playerId: saved.playerId,
-        });
-
-        // Timeout: if no response in 5 seconds, give up
-        reconnectTimerRef.current = setTimeout(() => {
-          setReconnecting(false);
-          clearSession();
-          setError("Reconnection timed out. Please rejoin.");
-        }, 5000);
-      }
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
-
-    // Room events
-    socket.on("room_created", ({ roomCode, playerId, room }) => {
-      setPlayerId(playerId);
-      setRoom(room);
-      saveSession(roomCode, playerId);
-    });
-
-    socket.on("room_joined", ({ roomCode, playerId, room }) => {
-      setPlayerId(playerId);
-      setRoom(room);
-      saveSession(roomCode, playerId);
-    });
-
-    socket.on("room_updated", ({ room }) => {
-      setRoom(room);
-    });
-
-    socket.on("player_joined", ({ room }) => {
-      setRoom(room);
-    });
-
-    socket.on("player_left", ({ room }) => {
-      setRoom(room);
-    });
-
-    // Game events
-    socket.on("game_started", ({ state }) => {
-      setGameState(state);
-    });
-
-    socket.on("game_state_updated", ({ state }) => {
-      setGameState(state);
-    });
-
-    // Reconnection response
-    socket.on("game_reconnected", ({ state, room }) => {
-      if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
-      setReconnecting(false);
-      setPlayerId(getSavedSession()?.playerId ?? null);
-      setRoom(room);
-      setGameState(state);
-    });
-
-    socket.on("action_error", ({ error }) => {
-      setError(error);
-    });
-
-    // Chat
-    socket.on("chat_message", (msg) => {
-      addChatMessage(msg);
-    });
-
-    // Errors
-    socket.on("error", ({ message }) => {
-      if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
-      setReconnecting(false);
-      clearSession();
-      setError(message);
-    });
-
-    socket.on("connect_error", () => {
-      setError("Connection lost. Reconnecting...");
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("room_created");
-      socket.off("room_joined");
-      socket.off("room_updated");
-      socket.off("player_joined");
-      socket.off("player_left");
-      socket.off("game_started");
-      socket.off("game_state_updated");
-      socket.off("game_reconnected");
-      socket.off("action_error");
-      socket.off("chat_message");
-      socket.off("error");
-      socket.off("connect_error");
-    };
-  }, []);
+  // Ensure listeners are initialized (idempotent)
+  const socket = getSocket();
+  initSocketListeners(socket);
 
   const createRoom = useCallback((playerName: string, maxPlayers?: number) => {
-    socketRef.current?.emit("create_room", { playerName, maxPlayers });
+    getSocket().emit("create_room", { playerName, maxPlayers });
   }, []);
 
   const joinRoom = useCallback((roomCode: string, playerName: string) => {
-    socketRef.current?.emit("join_room", { roomCode, playerName });
+    getSocket().emit("join_room", { roomCode, playerName });
   }, []);
 
   const leaveRoom = useCallback(() => {
-    socketRef.current?.emit("leave_room");
+    getSocket().emit("leave_room");
     clearSession();
-    setRoom(null);
-    setPlayerId(null);
+    useGameStore.getState().setRoom(null);
+    useGameStore.getState().setPlayerId(null);
   }, []);
 
   const setReady = useCallback((ready: boolean) => {
-    socketRef.current?.emit("set_ready", { ready });
+    getSocket().emit("set_ready", { ready });
   }, []);
 
   const startGame = useCallback(() => {
-    socketRef.current?.emit("start_game");
+    getSocket().emit("start_game");
   }, []);
 
   const sendAction = useCallback((action: GameAction) => {
-    socketRef.current?.emit("game_action", { action });
+    getSocket().emit("game_action", { action });
   }, []);
 
   const sendChat = useCallback((message: string) => {
-    socketRef.current?.emit("chat_message", { message });
+    getSocket().emit("chat_message", { message });
   }, []);
 
   return {

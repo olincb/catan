@@ -51,6 +51,29 @@ export function setupSocketHandlers(io: Server): void {
       }
 
       socket.join(result.room.code);
+
+      // If game is in progress, this is a rejoin — send game state
+      if (result.room.gameId) {
+        markPlayerReconnected(result.room.gameId, result.playerId);
+        const state = getGameState(result.room.gameId);
+        if (state) {
+          const sanitized = sanitizeStateForPlayer(state, result.playerId);
+          // Send room_joined first so client saves session + sets playerId
+          socket.emit("room_joined", {
+            roomCode: result.room.code,
+            playerId: result.playerId,
+            room: serializeRoom(result.room),
+          });
+          // Then send game state to restore the game
+          socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(result.room) });
+          socket.to(result.room.code).emit("player_reconnected", {
+            playerId: result.playerId,
+            room: serializeRoom(result.room),
+          });
+          return;
+        }
+      }
+
       socket.emit("room_joined", {
         roomCode: result.room.code,
         playerId: result.playerId,
