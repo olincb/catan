@@ -84,7 +84,7 @@ export default function HexTile({ hex, cx, cy, size }: HexTileProps) {
           {/* Probability dots */}
           <text
             x={cx}
-            y={cy + 10 + size * 0.38}
+            y={cy + 10 + size * 0.18}
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize={9}
