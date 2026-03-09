@@ -157,9 +157,11 @@ export function setupSocketHandlers(io: Server): void {
     // --- Reconnection ---
 
     socket.on("reconnect_to_game", ({ roomCode, playerId }: { roomCode: string; playerId: string }) => {
+      console.log(`Reconnect attempt: room=${roomCode}, player=${playerId}, socket=${socket.id}`);
       const result = reconnectPlayer(roomCode, playerId, socket.id);
 
       if ("error" in result) {
+        console.log(`Reconnect failed: ${result.error}`);
         socket.emit("error", { message: result.error });
         return;
       }
@@ -176,10 +178,15 @@ export function setupSocketHandlers(io: Server): void {
       socket.join(room.code);
 
       const state = getGameState(room.gameId);
-      if (state) {
-        const sanitized = sanitizeStateForPlayer(state, playerId);
-        socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(room) });
+      if (!state) {
+        console.log(`Reconnect failed: game state not found for gameId=${room.gameId}`);
+        socket.emit("error", { message: "Game state not found" });
+        return;
       }
+
+      const sanitized = sanitizeStateForPlayer(state, playerId);
+      socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(room) });
+      console.log(`Reconnect success: player=${playerId} rejoined room=${roomCode}`);
 
       // Notify others that the player reconnected
       socket.to(room.code).emit("player_reconnected", {

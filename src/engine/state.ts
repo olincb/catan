@@ -35,6 +35,7 @@ import {
   acceptTrade,
   rejectTrade,
   cancelTrade,
+  confirmTrade,
   maritimeTrade,
 } from "./trading";
 import {
@@ -238,7 +239,9 @@ export function dispatchAction(
     case "MOVE_ROBBER":
       return handleMoveRobber(state, playerId, action.hexId, action.stealFromPlayerId);
     case "PROPOSE_TRADE":
-      return handleProposeTrade(state, playerId, action.offering, action.requesting);
+      return handleProposeTrade(state, playerId, action.offering, action.requesting, action.targetPlayerId);
+    case "CONFIRM_TRADE":
+      return handleConfirmTrade(state, playerId, action.acceptingPlayerId);
     case "CANCEL_TRADE":
       return handleCancelTrade(state, playerId);
     case "MARITIME_TRADE":
@@ -702,7 +705,8 @@ function handleProposeTrade(
   state: GameState,
   playerId: string,
   offering: Partial<ResourceHand>,
-  requesting: Partial<ResourceHand>
+  requesting: Partial<ResourceHand>,
+  targetPlayerId?: string
 ): ActionResult {
   if (state.turnPhase !== TurnPhase.Trading && state.turnPhase !== TurnPhase.Building) {
     return { success: false, error: "Cannot trade now", state };
@@ -712,13 +716,18 @@ function handleProposeTrade(
     return { success: false, error: "A trade is already in progress", state };
   }
 
-  const result = proposeTrade(state, playerId, offering, requesting);
+  const result = proposeTrade(state, playerId, offering, requesting, targetPlayerId);
   if (result.error) {
     return { success: false, error: result.error, state };
   }
 
   const playerName = result.state.players.find((p) => p.id === playerId)!.name;
-  log(result.state, `${playerName} proposed a trade`, playerId);
+  if (targetPlayerId) {
+    const targetName = result.state.players.find((p) => p.id === targetPlayerId)!.name;
+    log(result.state, `${playerName} proposed a trade to ${targetName}`, playerId);
+  } else {
+    log(result.state, `${playerName} proposed a trade to all players`, playerId);
+  }
 
   return { success: true, state: result.state };
 }
@@ -762,6 +771,26 @@ function handleCancelTrade(state: GameState, playerId: string): ActionResult {
   const newState = cancelTrade(state);
   log(newState, `Trade cancelled`, playerId);
   return { success: true, state: newState };
+}
+
+function handleConfirmTrade(
+  state: GameState,
+  playerId: string,
+  acceptingPlayerId: string
+): ActionResult {
+  if (!state.activeTradeOffer) {
+    return { success: false, error: "No active trade", state };
+  }
+
+  const result = confirmTrade(state, playerId, acceptingPlayerId);
+  if (result.error) {
+    return { success: false, error: result.error, state };
+  }
+
+  const proposerName = result.state.players.find((p) => p.id === playerId)!.name;
+  const accepterName = result.state.players.find((p) => p.id === acceptingPlayerId)!.name;
+  log(result.state, `${proposerName} confirmed trade with ${accepterName}`, playerId);
+  return { success: true, state: result.state };
 }
 
 function handleMaritimeTrade(

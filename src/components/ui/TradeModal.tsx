@@ -22,12 +22,30 @@ interface TradeModalProps {
   gameState: GameState;
 }
 
+function TradeResources({ resources, label }: { resources: Partial<ResourceHand>; label: string }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400">{label}:</p>
+      <div className="flex gap-1">
+        {Object.entries(resources).map(([res, amount]) =>
+          amount && amount > 0 ? (
+            <span key={res} className="text-sm">
+              {amount}{RESOURCE_EMOJI[res as Resource]}
+            </span>
+          ) : null
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function TradeModal({ gameState }: TradeModalProps) {
   const { playerId } = useGameStore();
   const { sendAction } = useSocket();
   const [showPropose, setShowPropose] = useState(false);
   const [offering, setOffering] = useState<Partial<ResourceHand>>({});
   const [requesting, setRequesting] = useState<Partial<ResourceHand>>({});
+  const [tradeTarget, setTradeTarget] = useState<string>("all");
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const isMyTurn = gameState.players[gameState.currentPlayerIndex]?.id === playerId;
@@ -38,51 +56,58 @@ export default function TradeModal({ gameState }: TradeModalProps) {
     const proposer = gameState.players.find((p) => p.id === activeTrade.fromPlayerId);
     const isMyTrade = activeTrade.fromPlayerId === playerId;
     const myResponse = playerId ? activeTrade.responses[playerId] : undefined;
+    const isTargeted = !!activeTrade.targetPlayerId;
+    const isOpenTrade = !isTargeted;
+    const targetPlayer = activeTrade.targetPlayerId
+      ? gameState.players.find((p) => p.id === activeTrade.targetPlayerId)
+      : null;
+
+    // For non-proposer: am I part of this trade?
+    const canIRespond = playerId ? playerId in activeTrade.responses : false;
 
     return (
       <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600">
-        <h3 className="text-yellow-400 font-bold mb-2">
+        <h3 className="text-yellow-400 font-bold mb-1">
           🤝 Trade from {proposer?.name}
         </h3>
+        {isTargeted && targetPlayer && (
+          <p className="text-xs text-gray-400 mb-2">
+            → To <span style={{ color: targetPlayer.color }}>{targetPlayer.name}</span> only
+          </p>
+        )}
+        {isOpenTrade && (
+          <p className="text-xs text-gray-400 mb-2">→ Open to all players</p>
+        )}
+
         <div className="flex items-center gap-4 mb-3">
-          <div>
-            <p className="text-xs text-gray-400">Offering:</p>
-            <div className="flex gap-1">
-              {Object.entries(activeTrade.offering).map(([res, amount]) =>
-                amount && amount > 0 ? (
-                  <span key={res} className="text-sm">
-                    {amount}{RESOURCE_EMOJI[res as Resource]}
-                  </span>
-                ) : null
-              )}
-            </div>
-          </div>
+          <TradeResources resources={activeTrade.offering} label="Offering" />
           <span className="text-gray-500">⇄</span>
-          <div>
-            <p className="text-xs text-gray-400">Requesting:</p>
-            <div className="flex gap-1">
-              {Object.entries(activeTrade.requesting).map(([res, amount]) =>
-                amount && amount > 0 ? (
-                  <span key={res} className="text-sm">
-                    {amount}{RESOURCE_EMOJI[res as Resource]}
-                  </span>
-                ) : null
-              )}
-            </div>
-          </div>
+          <TradeResources resources={activeTrade.requesting} label="Requesting" />
         </div>
 
         {/* Per-player response status */}
         <div className="mb-3 space-y-0.5">
           {gameState.players
-            .filter((p) => p.id !== activeTrade.fromPlayerId)
+            .filter((p) => p.id in activeTrade.responses)
             .map((p) => {
               const response = activeTrade.responses[p.id];
               return (
                 <div key={p.id} className="flex items-center gap-2 text-xs">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
                   <span className="text-gray-300">{p.name}:</span>
-                  {response === "accepted" && <span className="text-green-400">✅ Accepted</span>}
+                  {response === "accepted" && (
+                    <>
+                      <span className="text-green-400">✅ Accepted</span>
+                      {isMyTrade && isOpenTrade && (
+                        <button
+                          className="ml-1 bg-green-600 hover:bg-green-700 text-white py-0.5 px-2 rounded text-xs"
+                          onClick={() => sendAction({ type: "CONFIRM_TRADE", acceptingPlayerId: p.id })}
+                        >
+                          Confirm
+                        </button>
+                      )}
+                    </>
+                  )}
                   {response === "rejected" && <span className="text-red-400">❌ Rejected</span>}
                   {response === "pending" && <span className="text-gray-500">Pending...</span>}
                 </div>
@@ -90,6 +115,7 @@ export default function TradeModal({ gameState }: TradeModalProps) {
             })}
         </div>
 
+        {/* Action buttons */}
         {isMyTrade ? (
           <button
             className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
@@ -97,11 +123,7 @@ export default function TradeModal({ gameState }: TradeModalProps) {
           >
             Cancel Trade
           </button>
-        ) : myResponse && myResponse !== "pending" ? (
-          <p className="text-sm text-gray-400 italic">
-            You {myResponse === "accepted" ? "accepted" : "rejected"} this trade
-          </p>
-        ) : (
+        ) : canIRespond && myResponse === "pending" ? (
           <div className="flex gap-2">
             <button
               className="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded text-sm"
@@ -116,6 +138,12 @@ export default function TradeModal({ gameState }: TradeModalProps) {
               ❌ Reject
             </button>
           </div>
+        ) : canIRespond && myResponse && myResponse !== "pending" ? (
+          <p className="text-sm text-gray-400 italic">
+            You {myResponse === "accepted" ? "accepted" : "rejected"} this trade
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500 italic">This trade is not for you</p>
         )}
       </div>
     );
@@ -148,11 +176,46 @@ export default function TradeModal({ gameState }: TradeModalProps) {
     </div>
   );
 
+  // Other players for trade targeting
+  const otherPlayers = gameState.players.filter((p) => p.id !== playerId);
+
   // Propose trade form
   if (showPropose) {
     return (
       <div className="bg-gray-800 rounded-lg p-4">
         <h3 className="text-yellow-400 font-bold mb-2">Propose Trade</h3>
+
+        {/* Trade target selector */}
+        <div className="mb-3">
+          <p className="text-xs text-gray-400 mb-1">Trade with:</p>
+          <div className="flex flex-wrap gap-1">
+            <button
+              className={`py-0.5 px-2 rounded text-xs transition-colors ${
+                tradeTarget === "all"
+                  ? "bg-yellow-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+              }`}
+              onClick={() => setTradeTarget("all")}
+            >
+              All Players
+            </button>
+            {otherPlayers.map((p) => (
+              <button
+                key={p.id}
+                className={`py-0.5 px-2 rounded text-xs transition-colors ${
+                  tradeTarget === p.id
+                    ? "bg-yellow-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                }`}
+                onClick={() => setTradeTarget(p.id)}
+              >
+                <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: p.color }} />
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
             <p className="text-xs text-gray-400 mb-1">You give:</p>
@@ -198,10 +261,16 @@ export default function TradeModal({ gameState }: TradeModalProps) {
           <button
             className="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded text-sm"
             onClick={() => {
-              sendAction({ type: "PROPOSE_TRADE", offering, requesting });
+              sendAction({
+                type: "PROPOSE_TRADE",
+                offering,
+                requesting,
+                targetPlayerId: tradeTarget === "all" ? undefined : tradeTarget,
+              });
               setShowPropose(false);
               setOffering({});
               setRequesting({});
+              setTradeTarget("all");
             }}
           >
             Send Offer

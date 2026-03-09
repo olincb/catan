@@ -240,6 +240,7 @@ export interface PlayerState {
 export interface TradeOffer {
   id: string;
   fromPlayerId: string;
+  targetPlayerId?: string; // if set, only this player can accept (targeted trade)
   offering: Partial<ResourceHand>;
   requesting: Partial<ResourceHand>;
   responses: Record<string, "pending" | "accepted" | "rejected">;
@@ -285,10 +286,11 @@ export type GameAction =
   | { type: "PLAY_MONOPOLY"; resource: Resource }
   | { type: "MOVE_ROBBER"; hexId: number; stealFromPlayerId?: string }
   | { type: "DISCARD_RESOURCES"; resources: Partial<ResourceHand> }
-  | { type: "PROPOSE_TRADE"; offering: Partial<ResourceHand>; requesting: Partial<ResourceHand> }
+  | { type: "PROPOSE_TRADE"; offering: Partial<ResourceHand>; requesting: Partial<ResourceHand>; targetPlayerId?: string }
   | { type: "ACCEPT_TRADE"; tradeId: string }
   | { type: "REJECT_TRADE"; tradeId: string }
   | { type: "CANCEL_TRADE" }
+  | { type: "CONFIRM_TRADE"; acceptingPlayerId: string }
   | { type: "MARITIME_TRADE"; give: Resource; receive: Resource }
   | { type: "END_TURN" }
   | { type: "SETUP_PLACE_SETTLEMENT"; vertexId: number }

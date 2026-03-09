@@ -61,6 +61,7 @@ export function useSocket() {
   } = useGameStore();
 
   const socketRef = useRef<Socket | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -77,6 +78,13 @@ export function useSocket() {
           roomCode: saved.roomCode,
           playerId: saved.playerId,
         });
+
+        // Timeout: if no response in 5 seconds, give up
+        reconnectTimerRef.current = setTimeout(() => {
+          setReconnecting(false);
+          clearSession();
+          setError("Reconnection timed out. Please rejoin.");
+        }, 5000);
       }
     });
 
@@ -120,6 +128,7 @@ export function useSocket() {
 
     // Reconnection response
     socket.on("game_reconnected", ({ state, room }) => {
+      if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
       setReconnecting(false);
       setPlayerId(getSavedSession()?.playerId ?? null);
       setRoom(room);
@@ -137,7 +146,7 @@ export function useSocket() {
 
     // Errors
     socket.on("error", ({ message }) => {
-      // If reconnection fails, clear saved session and stop reconnecting
+      if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
       setReconnecting(false);
       clearSession();
       setError(message);
