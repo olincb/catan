@@ -254,6 +254,7 @@ export interface GameState {
   turnPhase: TurnPhase;
   turnNumber: number;
   setupRound: number;              // 1 or 2 during setup
+  setupLastPlacedVertex: number | null; // vertex ID of settlement just placed this setup turn
   diceRoll: [number, number] | null;
   developmentCardDeck: DevelopmentCardType[];
   discardingPlayerIds: string[];   // players who must discard

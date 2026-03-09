@@ -84,6 +84,7 @@ export function createGame(
     turnPhase: TurnPhase.Building, // during setup, players place buildings
     turnNumber: 0,
     setupRound: 1,
+    setupLastPlacedVertex: null,
     diceRoll: null,
     developmentCardDeck: createDevCardDeck(),
     discardingPlayerIds: [],
@@ -108,6 +109,9 @@ function getCurrentPlayer(state: GameState): PlayerState {
 function advanceSetupTurn(state: GameState): GameState {
   const newState = structuredClone(state);
   const numPlayers = newState.players.length;
+
+  // Reset for the next player's turn
+  newState.setupLastPlacedVertex = null;
 
   if (newState.phase === GamePhase.SetupForward) {
     if (newState.currentPlayerIndex < numPlayers - 1) {
@@ -234,6 +238,11 @@ function handleSetupAction(
   action: { type: string; [key: string]: unknown }
 ): ActionResult {
   if (action.type === "SETUP_PLACE_SETTLEMENT") {
+    // Must place settlement before road: reject if already placed this turn
+    if (state.setupLastPlacedVertex !== null) {
+      return { success: false, error: "Already placed a settlement this turn — place a road next", state };
+    }
+
     const vertexId = action.vertexId as number;
     const validVertices = getValidSettlementVertices(state, playerId, true);
 
@@ -242,6 +251,7 @@ function handleSetupAction(
     }
 
     let newState = placeSettlement(state, playerId, vertexId, true);
+    newState.setupLastPlacedVertex = vertexId;
 
     // During second setup round, give initial resources from adjacent hexes
     if (state.phase === GamePhase.SetupReverse) {
@@ -263,20 +273,22 @@ function handleSetupAction(
   }
 
   if (action.type === "SETUP_PLACE_ROAD") {
+    // Must place settlement first: reject if no settlement placed this turn
+    if (state.setupLastPlacedVertex === null) {
+      return { success: false, error: "Place a settlement first", state };
+    }
+
     const edgeId = action.edgeId as number;
 
-    // Find the settlement just placed by this player to determine valid road locations
-    // The most recently placed settlement is the one we care about
-    const playerVertices = state.board.vertices.filter(
-      (v) => v.building?.playerId === playerId
-    );
+    // Road must connect to the settlement just placed this turn
+    const justPlacedVertex = state.board.vertices[state.setupLastPlacedVertex];
+    const validEdgeIds = justPlacedVertex.edgeIds.filter((eid) => {
+      const edge = state.board.edges[eid];
+      return edge.road === null;
+    });
 
-    // During setup, find the vertex that was placed in this turn
-    // We'll get valid roads connected to any of the player's settlements
-    const validEdges = getValidRoadEdges(state, playerId, true);
-
-    if (!validEdges.includes(edgeId)) {
-      return { success: false, error: "Invalid road location", state };
+    if (!validEdgeIds.includes(edgeId)) {
+      return { success: false, error: "Road must connect to the settlement you just placed", state };
     }
 
     let newState = placeRoad(state, playerId, edgeId, true);

@@ -144,6 +144,132 @@ describe("Setup Phase", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("Not your turn");
   });
+
+  it("rejects road placement before settlement during setup", () => {
+    const state = createGame("test", [
+      { id: "p1", name: "Alice" },
+      { id: "p2", name: "Bob" },
+    ]);
+
+    // Try to place a road without placing a settlement first
+    const result = dispatchAction(state, {
+      playerId: "p1",
+      action: { type: "SETUP_PLACE_ROAD", edgeId: 0 },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Place a settlement first");
+  });
+
+  it("rejects second settlement before road during setup", () => {
+    const state = createGame("test", [
+      { id: "p1", name: "Alice" },
+      { id: "p2", name: "Bob" },
+    ]);
+
+    // Place first settlement
+    const v1 = state.board.vertices.find((v) => v.hexIds.length > 0 && !v.building)!;
+    const afterSettlement = dispatchAction(state, {
+      playerId: "p1",
+      action: { type: "SETUP_PLACE_SETTLEMENT", vertexId: v1.id },
+    });
+    expect(afterSettlement.success).toBe(true);
+
+    // Try to place another settlement without placing a road first
+    const v2 = afterSettlement.state.board.vertices.find(
+      (v) => v.hexIds.length > 0 && !v.building && v.id !== v1.id
+    )!;
+    const result = dispatchAction(afterSettlement.state, {
+      playerId: "p1",
+      action: { type: "SETUP_PLACE_SETTLEMENT", vertexId: v2.id },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Already placed a settlement");
+  });
+
+  it("road must connect to just-placed settlement during setup", () => {
+    const state = createGame("test", [
+      { id: "p1", name: "Alice" },
+      { id: "p2", name: "Bob" },
+    ]);
+
+    // Place settlement
+    const v1 = state.board.vertices.find((v) => v.hexIds.length > 0 && !v.building)!;
+    const afterSettlement = dispatchAction(state, {
+      playerId: "p1",
+      action: { type: "SETUP_PLACE_SETTLEMENT", vertexId: v1.id },
+    });
+    expect(afterSettlement.success).toBe(true);
+
+    // Place road on a valid edge adjacent to the settlement
+    const validEdge = v1.edgeIds.find(
+      (eid) => afterSettlement.state.board.edges[eid].road === null
+    )!;
+    const afterRoad = dispatchAction(afterSettlement.state, {
+      playerId: "p1",
+      action: { type: "SETUP_PLACE_ROAD", edgeId: validEdge },
+    });
+    expect(afterRoad.success).toBe(true);
+
+    // Should have advanced to player 2
+    expect(afterRoad.state.currentPlayerIndex).toBe(1);
+  });
+
+  it("full setup completes with 2 players and transitions to Playing", () => {
+    let state = createGame("test", [
+      { id: "p1", name: "Alice" },
+      { id: "p2", name: "Bob" },
+    ]);
+
+    // Helper to place settlement + road for current player
+    function placeSetupPair(s: GameState, pid: string): GameState {
+      const v = s.board.vertices.find((v) => v.hexIds.length >= 2 && !v.building &&
+        v.adjacentVertexIds.every((aid) => !s.board.vertices[aid].building)
+      )!;
+      const r1 = dispatchAction(s, {
+        playerId: pid,
+        action: { type: "SETUP_PLACE_SETTLEMENT", vertexId: v.id },
+      });
+      expect(r1.success).toBe(true);
+
+      const edge = v.edgeIds.find((eid) => r1.state.board.edges[eid].road === null)!;
+      const r2 = dispatchAction(r1.state, {
+        playerId: pid,
+        action: { type: "SETUP_PLACE_ROAD", edgeId: edge },
+      });
+      expect(r2.success).toBe(true);
+      return r2.state;
+    }
+
+    // Forward: p1 then p2
+    expect(state.phase).toBe(GamePhase.SetupForward);
+    state = placeSetupPair(state, "p1");
+    expect(state.currentPlayerIndex).toBe(1);
+    state = placeSetupPair(state, "p2");
+
+    // Reverse: p2 then p1
+    expect(state.phase).toBe(GamePhase.SetupReverse);
+    expect(state.currentPlayerIndex).toBe(1);
+    state = placeSetupPair(state, "p2");
+    expect(state.currentPlayerIndex).toBe(0);
+    state = placeSetupPair(state, "p1");
+
+    // Should now be in Playing phase
+    expect(state.phase).toBe(GamePhase.Playing);
+    expect(state.turnPhase).toBe(TurnPhase.PreRoll);
+    expect(state.currentPlayerIndex).toBe(0);
+
+    // Each player should have 2 settlements and 2 roads
+    const p1Settlements = state.board.vertices.filter(
+      (v) => v.building?.playerId === "p1"
+    ).length;
+    const p1Roads = state.board.edges.filter(
+      (e) => e.road?.playerId === "p1"
+    ).length;
+    expect(p1Settlements).toBe(2);
+    expect(p1Roads).toBe(2);
+  });
 });
 
 describe("Resource Helpers", () => {
