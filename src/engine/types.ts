@@ -192,6 +192,7 @@ export interface Vertex {
   hexIds: number[];        // adjacent hex IDs (1-3)
   edgeIds: number[];       // adjacent edge IDs (2-3)
   adjacentVertexIds: number[];
+  position: { x: number; y: number }; // unit-space position (multiply by hex size to get pixels)
   building: { type: BuildingType; playerId: string } | null;
   harbor: HarborType | null;
 }

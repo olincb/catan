@@ -6,7 +6,7 @@
 
 import React, { useMemo } from "react";
 import type { GameState, Vertex as VertexType, Edge as EdgeType, Hex } from "../../engine/types";
-import { GamePhase, TurnPhase, PLAYER_COLORS } from "../../engine/types";
+import { GamePhase, TurnPhase, HarborType, PLAYER_COLORS } from "../../engine/types";
 import HexTile from "./HexTile";
 import VertexComponent from "./Vertex";
 import EdgeComponent from "./Edge";
@@ -25,20 +25,6 @@ function hexToPixel(q: number, r: number, size: number): { x: number; y: number 
   return { x, y };
 }
 
-function getHexCorners(cx: number, cy: number, size: number): { x: number; y: number }[] {
-  return Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 180) * (60 * i);
-    return {
-      x: cx + size * Math.cos(angle),
-      y: cy + size * Math.sin(angle),
-    };
-  });
-}
-
-function roundKey(x: number, y: number): string {
-  return `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`;
-}
-
 export default function HexGrid({ gameState }: HexGridProps) {
   const { playerId, selectedAction } = useGameStore();
   const { sendAction } = useSocket();
@@ -49,7 +35,6 @@ export default function HexGrid({ gameState }: HexGridProps) {
   // Compute pixel positions for all elements
   const layout = useMemo(() => {
     const hexPositions: { hex: Hex; cx: number; cy: number }[] = [];
-    const vertexPositionMap = new Map<string, { x: number; y: number; vertexId: number }>();
     const vertexPixels = new Map<number, { x: number; y: number }>();
 
     // 1. Compute hex centers
@@ -58,104 +43,12 @@ export default function HexGrid({ gameState }: HexGridProps) {
       hexPositions.push({ hex, cx: pos.x, cy: pos.y });
     }
 
-    // 2. Compute vertex positions by finding unique corners
-    const cornerToVertexId = new Map<string, number>();
-
-    for (const hex of gameState.board.hexes) {
-      const center = hexToPixel(hex.coord.q, hex.coord.r, HEX_SIZE);
-      const corners = getHexCorners(center.x, center.y, HEX_SIZE);
-
-      for (const corner of corners) {
-        const key = roundKey(corner.x, corner.y);
-        if (!cornerToVertexId.has(key)) {
-          // Find which vertex this corner belongs to
-          for (const vertex of gameState.board.vertices) {
-            if (vertex.hexIds.includes(hex.id)) {
-              // Check if this corner is close to the vertex position
-              // We need to match vertices by their hex adjacency
-              const vKey = roundKey(corner.x, corner.y);
-              if (!vertexPositionMap.has(vKey)) {
-                // Try to find the correct vertex for this corner
-                // A vertex is shared by specific hexes — check all hexes that share this corner
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Simpler approach: compute all unique corners across all hexes,
-    // then match them to vertices by index order
-    const allCorners = new Map<string, { x: number; y: number }>();
-    const hexCornerMap = new Map<number, string[]>(); // hexId → [corner keys]
-
-    for (const hex of gameState.board.hexes) {
-      const center = hexToPixel(hex.coord.q, hex.coord.r, HEX_SIZE);
-      const corners = getHexCorners(center.x, center.y, HEX_SIZE);
-      const keys: string[] = [];
-
-      for (const corner of corners) {
-        const key = roundKey(corner.x, corner.y);
-        allCorners.set(key, corner);
-        keys.push(key);
-      }
-
-      hexCornerMap.set(hex.id, keys);
-    }
-
-    // Match vertices to corners: a vertex touches specific hexes,
-    // so its position is the corner shared by all those hexes
+    // 2. Compute vertex positions directly from stored unit-space positions
     for (const vertex of gameState.board.vertices) {
-      if (vertex.hexIds.length === 0) continue;
-
-      // Get corners for the first hex
-      const firstHexCorners = hexCornerMap.get(vertex.hexIds[0]);
-      if (!firstHexCorners) continue;
-
-      if (vertex.hexIds.length === 1) {
-        // Vertex touches only 1 hex — find corners not shared with other hexes
-        // For now, we'll handle this after matching multi-hex vertices
-        continue;
-      }
-
-      // Find corners shared by ALL hexes this vertex touches
-      const sharedCorners = firstHexCorners.filter((key) =>
-        vertex.hexIds.every((hexId) => hexCornerMap.get(hexId)?.includes(key))
-      );
-
-      if (sharedCorners.length > 0) {
-        const pos = allCorners.get(sharedCorners[0])!;
-        vertexPixels.set(vertex.id, pos);
-      }
-    }
-
-    // Second pass: handle single-hex vertices
-    for (const vertex of gameState.board.vertices) {
-      if (vertexPixels.has(vertex.id)) continue;
-      if (vertex.hexIds.length === 0) continue;
-
-      const firstHexCorners = hexCornerMap.get(vertex.hexIds[0]);
-      if (!firstHexCorners) continue;
-
-      // Find a corner that isn't claimed by any multi-hex vertex yet
-      for (const key of firstHexCorners) {
-        const pos = allCorners.get(key)!;
-        // Check if this position is already used
-        let used = false;
-        for (const [, existingPos] of vertexPixels) {
-          if (
-            Math.abs(existingPos.x - pos.x) < 0.5 &&
-            Math.abs(existingPos.y - pos.y) < 0.5
-          ) {
-            used = true;
-            break;
-          }
-        }
-        if (!used) {
-          vertexPixels.set(vertex.id, pos);
-          break;
-        }
-      }
+      vertexPixels.set(vertex.id, {
+        x: vertex.position.x * HEX_SIZE,
+        y: vertex.position.y * HEX_SIZE,
+      });
     }
 
     // Compute bounds for viewBox
@@ -299,43 +192,46 @@ export default function HexGrid({ gameState }: HexGridProps) {
         );
       })}
 
-      {/* Harbors — render at perimeter vertices that have harbor assignments */}
-      {gameState.board.vertices
-        .filter((v) => v.harbor !== null)
-        .reduce<{ harbor: typeof gameState.board.vertices[0]["harbor"]; cx: number; cy: number }[]>(
-          (acc, vertex) => {
-            const pos = layout.vertexPixels.get(vertex.id);
-            if (!pos || !vertex.harbor) return acc;
-            // Offset harbor label outward from board center
-            const boardCenterX = 0;
-            const boardCenterY = 0;
-            const dx = pos.x - boardCenterX;
-            const dy = pos.y - boardCenterY;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const offsetDist = HEX_SIZE * 0.55;
-            const hx = pos.x + (dx / dist) * offsetDist;
-            const hy = pos.y + (dy / dist) * offsetDist;
+      {/* Harbors — render at edge midpoints between harbor vertex pairs, offset outward */}
+      {(() => {
+        // Find edges where both vertices share the same harbor type (these are harbor edges)
+        const harborEdges: { harbor: HarborType; mx: number; my: number }[] = [];
+        for (const edge of gameState.board.edges) {
+          const v1 = gameState.board.vertices[edge.vertexIds[0]];
+          const v2 = gameState.board.vertices[edge.vertexIds[1]];
+          if (v1.harbor && v1.harbor === v2.harbor) {
+            const p1 = layout.vertexPixels.get(v1.id);
+            const p2 = layout.vertexPixels.get(v2.id);
+            if (!p1 || !p2) continue;
 
-            // Deduplicate: only render one harbor badge per harbor type at this approximate position
-            const alreadyRendered = acc.some(
-              (h) => h.harbor === vertex.harbor && Math.abs(h.cx - hx) < HEX_SIZE * 0.5 && Math.abs(h.cy - hy) < HEX_SIZE * 0.5
-            );
-            if (!alreadyRendered) {
-              acc.push({ harbor: vertex.harbor, cx: hx, cy: hy });
-            }
-            return acc;
-          },
-          []
-        )
-        .map((h, i) => (
+            // Midpoint of the edge
+            const mx = (p1.x + p2.x) / 2;
+            const my = (p1.y + p2.y) / 2;
+
+            // Offset outward from board center
+            const dx = mx;
+            const dy = my;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const offsetDist = HEX_SIZE * 0.6;
+
+            harborEdges.push({
+              harbor: v1.harbor,
+              mx: mx + (dx / dist) * offsetDist,
+              my: my + (dy / dist) * offsetDist,
+            });
+          }
+        }
+
+        return harborEdges.map((h, i) => (
           <Harbor
             key={`harbor-${i}`}
-            harborType={h.harbor!}
-            cx={h.cx}
-            cy={h.cy}
+            harborType={h.harbor}
+            cx={h.mx}
+            cy={h.my}
             size={HEX_SIZE}
           />
-        ))}
+        ));
+      })()}
     </svg>
   );
 }

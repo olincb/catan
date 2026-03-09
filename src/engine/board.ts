@@ -196,6 +196,7 @@ function computeVerticesAndEdges(hexes: Hex[]): {
       hexIds: Array.from(vertexHexIds.get(vid) ?? []),
       edgeIds: vertexEdgeIds.get(vid) ?? [],
       adjacentVertexIds: Array.from(adjacentVertices.get(vid) ?? []),
+      position: vertexPositions.get(vid) ?? { x: 0, y: 0 },
       building: null,
       harbor: null,
     });
@@ -314,69 +315,4 @@ export function generateBoard(playerCount: number): BoardState {
 
 export function getHexPixelPosition(coord: HexCoord): { x: number; y: number } {
   return hexToPixel(coord);
-}
-
-export function getVertexPixelPosition(
-  vertex: Vertex,
-  hexes: Hex[]
-): { x: number; y: number } {
-  // Average of the hex centers this vertex touches, then offset to corner
-  // Instead, we recompute from the hex geometry
-  if (vertex.hexIds.length === 0) return { x: 0, y: 0 };
-
-  // Find the actual corner position by checking all hex corners
-  for (const hexId of vertex.hexIds) {
-    const hex = hexes[hexId];
-    const center = hexToPixel(hex.coord);
-    const corners = getHexCorners(center);
-
-    // The vertex is at one of these corners — we need to figure out which one
-    // We'll use all hexes this vertex touches to triangulate
-  }
-
-  // Simpler approach: compute all corners for the first hex, find which corner
-  // matches (is shared with all other hexes)
-  const firstHex = hexes[vertex.hexIds[0]];
-  const center = hexToPixel(firstHex.coord);
-  const corners = getHexCorners(center);
-
-  if (vertex.hexIds.length === 1) {
-    // Could be any corner — pick the one not shared with another hex's vertices
-    // For rendering, we'll compute this differently via a lookup
-    return corners[0]; // fallback
-  }
-
-  // Find the corner that's closest to all other hex centers
-  const otherCenters = vertex.hexIds.slice(1).map((hid) => hexToPixel(hexes[hid].coord));
-
-  let bestCorner = corners[0];
-  let bestScore = Infinity;
-
-  for (const corner of corners) {
-    let score = 0;
-    for (const oc of otherCenters) {
-      const dx = corner.x - oc.x;
-      const dy = corner.y - oc.y;
-      // Distance should be ~1 (hex size) for adjacent hex corners
-      score += Math.abs(Math.sqrt(dx * dx + dy * dy) - 1);
-    }
-    if (score < bestScore) {
-      bestScore = score;
-      bestCorner = corner;
-    }
-  }
-
-  return bestCorner;
-}
-
-export function getEdgePixelPositions(
-  edge: Edge,
-  vertices: Vertex[],
-  hexes: Hex[]
-): { x1: number; y1: number; x2: number; y2: number } {
-  const v1 = vertices[edge.vertexIds[0]];
-  const v2 = vertices[edge.vertexIds[1]];
-  const p1 = getVertexPixelPosition(v1, hexes);
-  const p2 = getVertexPixelPosition(v2, hexes);
-  return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
 }
