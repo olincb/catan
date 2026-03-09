@@ -38,6 +38,7 @@ import {
   confirmTrade,
   maritimeTrade,
 } from "./trading";
+import { getMaritimeTradeRate } from "./resources";
 import {
   createDevCardDeck,
   buyDevCard,
@@ -825,7 +826,8 @@ function handleMaritimeTrade(
   }
 
   const playerName = result.state.players.find((p) => p.id === playerId)!.name;
-  log(result.state, `${playerName} traded with the bank`, playerId);
+  const rate = getMaritimeTradeRate(state, playerId, give);
+  log(result.state, `${playerName} traded ${rate}${RESOURCE_EMOJI[give]} for 1${RESOURCE_EMOJI[receive]} with the bank`, playerId);
   return { success: true, state: result.state };
 }
 

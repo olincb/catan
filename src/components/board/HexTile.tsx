@@ -84,10 +84,10 @@ export default function HexTile({ hex, cx, cy, size }: HexTileProps) {
           {/* Probability dots */}
           <text
             x={cx}
-            y={cy + 10 + size * 0.22}
+            y={cy + 10 + size * 0.28}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={4}
+            fontSize={7}
             fill={isHighNumber ? "#e74c3c" : "#666"}
           >
             {"•".repeat(dotCount)}

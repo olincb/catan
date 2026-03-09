@@ -9,6 +9,7 @@ import type { GameState } from "../../engine/types";
 import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
+import Tooltip from "./Tooltip";
 
 interface ActionPanelProps {
   gameState: GameState;
@@ -94,60 +95,64 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
         {/* Build buttons */}
         {canBuild && (
           <>
-            <button
-              className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                !canAffordRoad
-                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
-                  : selectedAction === "road"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-              }`}
-              disabled={!canAffordRoad}
-              title={!canAffordRoad ? "Need: 1🧱 1🪵" : "Road: 1🧱 1🪵"}
-              onClick={() => setSelectedAction(selectedAction === "road" ? null : "road")}
-            >
-              🛤️ Road
-            </button>
-            <button
-              className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                !canAffordSettlement
-                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
-                  : selectedAction === "settlement"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-              }`}
-              disabled={!canAffordSettlement}
-              title={!canAffordSettlement ? "Need: 1🧱 1🪵 1🐑 1🌾" : "Settlement: 1🧱 1🪵 1🐑 1🌾"}
-              onClick={() => setSelectedAction(selectedAction === "settlement" ? null : "settlement")}
-            >
-              🏠 Settlement
-            </button>
-            <button
-              className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                !canAffordCity
-                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
-                  : selectedAction === "city"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-              }`}
-              disabled={!canAffordCity}
-              title={!canAffordCity ? "Need: 3⛰️ 2🌾" : "City: 3⛰️ 2🌾"}
-              onClick={() => setSelectedAction(selectedAction === "city" ? null : "city")}
-            >
-              🏰 City
-            </button>
-            <button
-              className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                !canAffordDevCard
-                  ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
-                  : "bg-purple-700 hover:bg-purple-600 text-white"
-              }`}
-              disabled={!canAffordDevCard}
-              title={!canAffordDevCard ? "Need: 1⛰️ 1🐑 1🌾" : "Dev Card: 1⛰️ 1🐑 1🌾"}
-              onClick={() => sendAction({ type: "BUY_DEVELOPMENT_CARD" })}
-            >
-              🃏 Development Card
-            </button>
+            <Tooltip content={!canAffordRoad ? "Need: 1🧱 1🪵" : "Road: 1🧱 1🪵"}>
+              <button
+                className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
+                  !canAffordRoad
+                    ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
+                    : selectedAction === "road"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                }`}
+                disabled={!canAffordRoad}
+                onClick={() => setSelectedAction(selectedAction === "road" ? null : "road")}
+              >
+                🛤️ Road
+              </button>
+            </Tooltip>
+            <Tooltip content={!canAffordSettlement ? "Need: 1🧱 1🪵 1🐑 1🌾" : "Settlement: 1🧱 1🪵 1🐑 1🌾"}>
+              <button
+                className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
+                  !canAffordSettlement
+                    ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
+                    : selectedAction === "settlement"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                }`}
+                disabled={!canAffordSettlement}
+                onClick={() => setSelectedAction(selectedAction === "settlement" ? null : "settlement")}
+              >
+                🏠 Settlement
+              </button>
+            </Tooltip>
+            <Tooltip content={!canAffordCity ? "Need: 3⛰️ 2🌾" : "City: 3⛰️ 2🌾"}>
+              <button
+                className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
+                  !canAffordCity
+                    ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
+                    : selectedAction === "city"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                }`}
+                disabled={!canAffordCity}
+                onClick={() => setSelectedAction(selectedAction === "city" ? null : "city")}
+              >
+                🏰 City
+              </button>
+            </Tooltip>
+            <Tooltip content={!canAffordDevCard ? "Need: 1⛰️ 1🐑 1🌾" : "Dev Card: 1⛰️ 1🐑 1🌾"}>
+              <button
+                className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
+                  !canAffordDevCard
+                    ? "bg-gray-700/50 text-gray-500 border border-gray-600 cursor-not-allowed opacity-60"
+                    : "bg-purple-700 hover:bg-purple-600 text-white"
+                }`}
+                disabled={!canAffordDevCard}
+                onClick={() => sendAction({ type: "BUY_DEVELOPMENT_CARD" })}
+              >
+                🃏 Development Card
+              </button>
+            </Tooltip>
           </>
         )}
 
