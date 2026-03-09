@@ -42,6 +42,17 @@ describe("Board Generation", () => {
     }
   });
 
+  it("all vertices have valid position coordinates", () => {
+    const board = generateBoard(4);
+    for (const vertex of board.vertices) {
+      expect(vertex.position).toBeDefined();
+      expect(typeof vertex.position.x).toBe("number");
+      expect(typeof vertex.position.y).toBe("number");
+      expect(Number.isFinite(vertex.position.x)).toBe(true);
+      expect(Number.isFinite(vertex.position.y)).toBe(true);
+    }
+  });
+
   it("edges connect exactly 2 vertices", () => {
     const board = generateBoard(4);
     for (const edge of board.edges) {

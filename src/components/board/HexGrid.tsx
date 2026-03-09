@@ -45,6 +45,7 @@ export default function HexGrid({ gameState }: HexGridProps) {
 
     // 2. Compute vertex positions directly from stored unit-space positions
     for (const vertex of gameState.board.vertices) {
+      if (!vertex.position) continue;
       vertexPixels.set(vertex.id, {
         x: vertex.position.x * HEX_SIZE,
         y: vertex.position.y * HEX_SIZE,
