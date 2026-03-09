@@ -14,9 +14,11 @@ import {
   DevelopmentCardType,
   Resource,
   TERRAIN_TO_RESOURCE,
+  BUILDING_COSTS,
   PIECE_LIMITS,
   PLAYER_COLORS,
   emptyResourceHand,
+  hasResources,
 } from "./types";
 import { generateBoard } from "./board";
 import { produceResources, getPlayersWhoMustDiscard, discardResources } from "./resources";
@@ -458,6 +460,11 @@ function handleBuildSettlement(
     return { success: false, error: "Cannot build now", state };
   }
 
+  const player = state.players.find((p) => p.id === playerId);
+  if (player && !hasResources(player.resources, BUILDING_COSTS.settlement)) {
+    return { success: false, error: "Not enough resources for a settlement", state };
+  }
+
   const validVertices = getValidSettlementVertices(state, playerId, false);
   if (!validVertices.includes(vertexId)) {
     return { success: false, error: "Invalid settlement location", state };
@@ -489,6 +496,11 @@ function handleBuildCity(
     return { success: false, error: "Cannot build now", state };
   }
 
+  const player = state.players.find((p) => p.id === playerId);
+  if (player && !hasResources(player.resources, BUILDING_COSTS.city)) {
+    return { success: false, error: "Not enough resources for a city", state };
+  }
+
   const validVertices = getValidCityVertices(state, playerId);
   if (!validVertices.includes(vertexId)) {
     return { success: false, error: "Invalid city location", state };
@@ -517,6 +529,11 @@ function handleBuildRoad(
 ): ActionResult {
   if (state.turnPhase !== TurnPhase.Trading && state.turnPhase !== TurnPhase.Building) {
     return { success: false, error: "Cannot build now", state };
+  }
+
+  const player = state.players.find((p) => p.id === playerId);
+  if (player && !hasResources(player.resources, BUILDING_COSTS.road)) {
+    return { success: false, error: "Not enough resources for a road", state };
   }
 
   const validEdges = getValidRoadEdges(state, playerId, false);

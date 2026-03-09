@@ -15,3 +15,8 @@ for example, if I have no stone, and I try to make a trade where I give stone, i
 ## nothing happens when you reject a trade
 
 when a player receives a trade offer and clicks "reject", nothing happens other than a note in the game log. there should be some sort of feedback to the player that their rejection was successful, such as a message that pops up saying "You have rejected the trade offer". we should consider whether we should remove the trade from the screen - maybe we should keep it though, because the fact that the trade stands is still important information. maybe we add feedback within the trade box itself, which all players can see.
+
+## reconnect not working
+
+when a player refreshes the page, they do now successfully see "reconnecting..." but they don't actually reconnect to the game. we want their screen to load back to the state it was in before they refreshed, and we want them to be able to continue playing without any issues.
+
