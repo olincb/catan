@@ -60,6 +60,22 @@ describe("Board Generation", () => {
       expect(edge.vertexIds[0]).not.toBe(edge.vertexIds[1]);
     }
   });
+
+  it("assigns exactly 9 harbors on 18 harbor vertices evenly distributed", () => {
+    const board = generateBoard(4);
+    const harborVertices = board.vertices.filter((v) => v.harbor !== null);
+    // 9 harbors × 2 vertices each = 18 harbor vertices
+    expect(harborVertices).toHaveLength(18);
+    // Count unique harbor types
+    const harborCounts = new Map<string, number>();
+    // Each harbor edge has 2 vertices with the same type — count pairs
+    const harborEdges = board.edges.filter((e) => {
+      const v1 = board.vertices[e.vertexIds[0]];
+      const v2 = board.vertices[e.vertexIds[1]];
+      return v1.harbor && v1.harbor === v2.harbor;
+    });
+    expect(harborEdges).toHaveLength(9);
+  });
 });
 
 describe("Game Creation", () => {

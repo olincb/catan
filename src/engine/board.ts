@@ -217,44 +217,49 @@ function computeVerticesAndEdges(hexes: Hex[]): {
 }
 
 // --- Harbor assignment ---
-// Harbors are placed on specific vertices at the board perimeter.
-// We identify perimeter vertices (those touching fewer than 3 hexes)
-// and assign harbor types to pairs of adjacent perimeter vertices.
+// Harbors are placed on coastal edges (edges with exactly 1 adjacent hex).
+// We sort all coastal edges by angle around the board center, then select
+// 9 evenly-spaced slots to ensure ports are distributed around the island.
 
 function assignHarbors(
   vertices: Vertex[],
   edges: Edge[],
   harbors: HarborType[]
 ): void {
-  // Find perimeter vertices (touching 1 or 2 hexes)
-  const perimeterVertexIds = vertices
-    .filter((v) => v.hexIds.length < 3)
-    .map((v) => v.id);
-
-  const perimeterSet = new Set(perimeterVertexIds);
-
-  // Find pairs of adjacent perimeter vertices (these form harbor "slots")
-  const harborSlots: [number, number][] = [];
-  const usedVertices = new Set<number>();
+  // Find all coastal edges (shared by exactly 1 hex)
+  const coastalEdges: { edgeIdx: number; v1: number; v2: number; angle: number }[] = [];
 
   for (const edge of edges) {
-    const [v1, v2] = edge.vertexIds;
-    if (perimeterSet.has(v1) && perimeterSet.has(v2) && !usedVertices.has(v1) && !usedVertices.has(v2)) {
-      // Only pick edges that are on the perimeter (shared by exactly 1 hex)
-      if (edge.hexIds.length === 1) {
-        harborSlots.push([v1, v2]);
-        usedVertices.add(v1);
-        usedVertices.add(v2);
-      }
-    }
+    if (edge.hexIds.length !== 1) continue;
+    const v1 = vertices[edge.vertexIds[0]];
+    const v2 = vertices[edge.vertexIds[1]];
+    // Midpoint of the edge in unit space
+    const mx = (v1.position.x + v2.position.x) / 2;
+    const my = (v1.position.y + v2.position.y) / 2;
+    // Angle from board center (0,0)
+    const angle = Math.atan2(my, mx);
+    coastalEdges.push({ edgeIdx: edge.id, v1: v1.id, v2: v2.id, angle });
   }
 
-  // Shuffle and assign harbors to slots
-  const shuffledHarbors = shuffle(harbors);
-  const numHarbors = Math.min(shuffledHarbors.length, harborSlots.length);
+  // Sort by angle so we walk around the perimeter in order
+  coastalEdges.sort((a, b) => a.angle - b.angle);
+
+  const totalCoastal = coastalEdges.length;
+  const numHarbors = Math.min(harbors.length, totalCoastal);
+
+  // Select evenly-spaced slots around the perimeter
+  const selectedSlots: { v1: number; v2: number }[] = [];
+  const spacing = totalCoastal / numHarbors;
 
   for (let i = 0; i < numHarbors; i++) {
-    const [v1, v2] = harborSlots[i];
+    const idx = Math.floor(i * spacing) % totalCoastal;
+    selectedSlots.push(coastalEdges[idx]);
+  }
+
+  // Shuffle harbor types and assign to the selected slots
+  const shuffledHarbors = shuffle(harbors);
+  for (let i = 0; i < numHarbors; i++) {
+    const { v1, v2 } = selectedSlots[i];
     vertices[v1].harbor = shuffledHarbors[i];
     vertices[v2].harbor = shuffledHarbors[i];
   }

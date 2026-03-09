@@ -213,7 +213,7 @@ export default function HexGrid({ gameState }: HexGridProps) {
             const dx = mx;
             const dy = my;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const offsetDist = HEX_SIZE * 0.6;
+            const offsetDist = HEX_SIZE * 0.9;
 
             harborEdges.push({
               harbor: v1.harbor,
