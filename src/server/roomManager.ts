@@ -23,6 +23,7 @@ export interface Room {
 
 const rooms = new Map<string, Room>();
 const playerToRoom = new Map<string, string>(); // socketId → room code
+const disconnectTimers = new Map<string, NodeJS.Timeout>(); // playerId → timeout handle
 
 function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
@@ -170,6 +171,83 @@ export function updatePlayerSocket(
   playerToRoom.set(newSocketId, code);
 
   return true;
+}
+
+const DISCONNECT_GRACE_PERIOD_MS = 60_000;
+
+/**
+ * Mark a player as disconnected with a grace period instead of removing them.
+ * Returns the room and playerId if the player was found in an active game, null otherwise.
+ */
+export function disconnectPlayer(
+  socketId: string,
+  onTimeout: (room: Room, playerId: string) => void
+): { room: Room; playerId: string } | null {
+  const code = playerToRoom.get(socketId);
+  if (!code) return null;
+
+  const room = rooms.get(code);
+  if (!room) return null;
+
+  const player = room.players.find((p) => p.socketId === socketId);
+  if (!player) return null;
+
+  // Only use grace period if a game is in progress
+  if (!room.gameId) return null;
+
+  playerToRoom.delete(socketId);
+
+  // Start grace period timer
+  const timer = setTimeout(() => {
+    disconnectTimers.delete(player.id);
+    room.players = room.players.filter((p) => p.id !== player.id);
+
+    if (room.players.length === 0) {
+      rooms.delete(code);
+    } else {
+      if (room.hostId === player.id) {
+        room.hostId = room.players[0].id;
+      }
+      onTimeout(room, player.id);
+    }
+  }, DISCONNECT_GRACE_PERIOD_MS);
+
+  disconnectTimers.set(player.id, timer);
+
+  return { room, playerId: player.id };
+}
+
+/**
+ * Reconnect a player by re-associating them with a new socket.
+ */
+export function reconnectPlayer(
+  code: string,
+  playerId: string,
+  newSocketId: string
+): { room: Room } | { error: string } {
+  const room = rooms.get(code.toUpperCase());
+  if (!room) return { error: "Room not found" };
+
+  const player = room.players.find((p) => p.id === playerId);
+  if (!player) return { error: "Player not found in room" };
+
+  // Cancel pending disconnect timer
+  const timer = disconnectTimers.get(playerId);
+  if (timer) {
+    clearTimeout(timer);
+    disconnectTimers.delete(playerId);
+  }
+
+  // Re-associate socket
+  playerToRoom.delete(player.socketId);
+  player.socketId = newSocketId;
+  playerToRoom.set(newSocketId, room.code);
+
+  return { room };
+}
+
+export function getDisconnectTimers(): Map<string, NodeJS.Timeout> {
+  return disconnectTimers;
 }
 
 export function canStartGame(room: Room): { canStart: boolean; error?: string } {

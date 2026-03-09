@@ -85,3 +85,31 @@ export function sanitizeStateForPlayer(
 
   return sanitized;
 }
+
+/**
+ * Mark a player as disconnected in the game state.
+ */
+export function markPlayerDisconnected(gameId: string, playerId: string): boolean {
+  const state = games.get(gameId);
+  if (!state) return false;
+
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return false;
+
+  player.connected = false;
+  return true;
+}
+
+/**
+ * Mark a player as reconnected in the game state.
+ */
+export function markPlayerReconnected(gameId: string, playerId: string): boolean {
+  const state = games.get(gameId);
+  if (!state) return false;
+
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return false;
+
+  player.connected = true;
+  return true;
+}

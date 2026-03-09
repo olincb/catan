@@ -10,6 +10,7 @@ import { GamePhase, TurnPhase, PLAYER_COLORS } from "../../engine/types";
 import HexTile from "./HexTile";
 import VertexComponent from "./Vertex";
 import EdgeComponent from "./Edge";
+import Harbor from "./Harbor";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 
@@ -225,7 +226,7 @@ export default function HexGrid({ gameState }: HexGridProps) {
   return (
     <svg
       viewBox={`${layout.viewBox.x} ${layout.viewBox.y} ${layout.viewBox.width} ${layout.viewBox.height}`}
-      className="w-full h-full max-h-[70vh]"
+      className="w-full h-full max-h-[50vh] md:max-h-[70vh]"
       style={{ background: "#1a5276" }}
     >
       {/* Water background is the SVG background color */}
@@ -297,6 +298,44 @@ export default function HexGrid({ gameState }: HexGridProps) {
           />
         );
       })}
+
+      {/* Harbors — render at perimeter vertices that have harbor assignments */}
+      {gameState.board.vertices
+        .filter((v) => v.harbor !== null)
+        .reduce<{ harbor: typeof gameState.board.vertices[0]["harbor"]; cx: number; cy: number }[]>(
+          (acc, vertex) => {
+            const pos = layout.vertexPixels.get(vertex.id);
+            if (!pos || !vertex.harbor) return acc;
+            // Offset harbor label outward from board center
+            const boardCenterX = 0;
+            const boardCenterY = 0;
+            const dx = pos.x - boardCenterX;
+            const dy = pos.y - boardCenterY;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const offsetDist = HEX_SIZE * 0.55;
+            const hx = pos.x + (dx / dist) * offsetDist;
+            const hy = pos.y + (dy / dist) * offsetDist;
+
+            // Deduplicate: only render one harbor badge per harbor type at this approximate position
+            const alreadyRendered = acc.some(
+              (h) => h.harbor === vertex.harbor && Math.abs(h.cx - hx) < HEX_SIZE * 0.5 && Math.abs(h.cy - hy) < HEX_SIZE * 0.5
+            );
+            if (!alreadyRendered) {
+              acc.push({ harbor: vertex.harbor, cx: hx, cy: hy });
+            }
+            return acc;
+          },
+          []
+        )
+        .map((h, i) => (
+          <Harbor
+            key={`harbor-${i}`}
+            harborType={h.harbor!}
+            cx={h.cx}
+            cy={h.cy}
+            size={HEX_SIZE}
+          />
+        ))}
     </svg>
   );
 }

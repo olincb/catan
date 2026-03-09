@@ -13,12 +13,16 @@ import {
   getPlayerBySocketId,
   setGameId,
   canStartGame,
+  disconnectPlayer,
+  reconnectPlayer,
 } from "./roomManager";
 import {
   startGame,
   processAction,
   getGameState,
   sanitizeStateForPlayer,
+  markPlayerDisconnected,
+  markPlayerReconnected,
 } from "./gameManager";
 import type { GameAction } from "../engine/types";
 
@@ -150,13 +154,79 @@ export function setupSocketHandlers(io: Server): void {
       });
     });
 
+    // --- Reconnection ---
+
+    socket.on("reconnect_to_game", ({ roomCode, playerId }: { roomCode: string; playerId: string }) => {
+      const result = reconnectPlayer(roomCode, playerId, socket.id);
+
+      if ("error" in result) {
+        socket.emit("error", { message: result.error });
+        return;
+      }
+
+      const { room } = result;
+
+      if (!room.gameId) {
+        socket.emit("error", { message: "No active game to reconnect to" });
+        return;
+      }
+
+      markPlayerReconnected(room.gameId, playerId);
+
+      socket.join(room.code);
+
+      const state = getGameState(room.gameId);
+      if (state) {
+        const sanitized = sanitizeStateForPlayer(state, playerId);
+        socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(room) });
+      }
+
+      // Notify others that the player reconnected
+      socket.to(room.code).emit("player_reconnected", {
+        playerId,
+        room: serializeRoom(room),
+      });
+    });
+
     // --- Disconnect ---
 
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
-      handleLeaveRoom(socket, io);
+      handleDisconnect(socket, io);
     });
   });
+}
+
+function handleDisconnect(socket: Socket, io: Server): void {
+  // Try grace-period disconnect first (only applies during active games)
+  const disconnectResult = disconnectPlayer(socket.id, (room, playerId) => {
+    // Called when the grace period expires — permanent removal
+    if (room.gameId) {
+      markPlayerDisconnected(room.gameId, playerId);
+    }
+    if (room.players.length > 0) {
+      io.to(room.code).emit("player_left", {
+        playerId,
+        room: serializeRoom(room),
+      });
+    }
+  });
+
+  if (disconnectResult) {
+    const { room, playerId } = disconnectResult;
+    if (room.gameId) {
+      markPlayerDisconnected(room.gameId, playerId);
+    }
+    // Notify others about temporary disconnection
+    socket.to(room.code).emit("player_disconnected", {
+      playerId,
+      room: serializeRoom(room),
+    });
+    return;
+  }
+
+  // No active game — remove immediately
+  handleLeaveRoom(socket, io);
 }
 
 function handleLeaveRoom(socket: Socket, io: Server): void {

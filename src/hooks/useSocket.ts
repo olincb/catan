@@ -81,7 +81,6 @@ export function useSocket() {
 
     socket.on("action_error", ({ error }) => {
       setError(error);
-      setTimeout(() => setError(null), 3000);
     });
 
     // Chat
@@ -92,7 +91,10 @@ export function useSocket() {
     // Errors
     socket.on("error", ({ message }) => {
       setError(message);
-      setTimeout(() => setError(null), 3000);
+    });
+
+    socket.on("connect_error", () => {
+      setError("Connection lost. Reconnecting...");
     });
 
     return () => {
@@ -108,6 +110,7 @@ export function useSocket() {
       socket.off("action_error");
       socket.off("chat_message");
       socket.off("error");
+      socket.off("connect_error");
     };
   }, []);
 
