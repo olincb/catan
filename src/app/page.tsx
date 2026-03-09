@@ -1,65 +1,88 @@
-import Image from "next/image";
+"use client";
+
+import { useGameStore } from "@/stores/gameStore";
+import { useSocket } from "@/hooks/useSocket";
+import Lobby from "@/components/ui/Lobby";
+import HexGrid from "@/components/board/HexGrid";
+import PlayerHud from "@/components/ui/PlayerHud";
+import ActionPanel from "@/components/ui/ActionPanel";
+import TradeModal from "@/components/ui/TradeModal";
+import GameLog from "@/components/ui/GameLog";
+import Scoreboard from "@/components/ui/Scoreboard";
+import DiscardDialog from "@/components/ui/DiscardDialog";
+import { GamePhase } from "@/engine/types";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  useSocket(); // Initialize socket connection
+
+  const { gameState, playerId, error } = useGameStore();
+
+  // No game yet — show lobby
+  if (!gameState) {
+    return <Lobby />;
+  }
+
+  const myPlayer = gameState.players.find((p) => p.id === playerId);
+
+  // Game finished
+  if (gameState.phase === GamePhase.Finished) {
+    const winner = gameState.players.find((p) => p.id === gameState.winnerId);
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 rounded-xl p-8 text-center shadow-2xl">
+          <h1 className="text-4xl font-bold text-yellow-400 mb-4">🏆 Game Over!</h1>
+          <p className="text-2xl text-white mb-2">
+            <span style={{ color: winner?.color }}>{winner?.name}</span> wins!
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <p className="text-gray-400">
+            {winner?.victoryPoints} + {winner?.hiddenVictoryPoints} hidden = {(winner?.victoryPoints ?? 0) + (winner?.hiddenVictoryPoints ?? 0)} VP
+          </p>
+          <button
+            className="mt-6 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg"
+            onClick={() => window.location.reload()}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Play Again
+          </button>
         </div>
-      </main>
+      </div>
+    );
+  }
+
+  // Active game
+  return (
+    <div className="min-h-screen bg-gray-900 flex">
+      {/* Toast error */}
+      {error && (
+        <div className="fixed top-4 right-4 z-50 bg-red-900/90 border border-red-500 text-red-200 rounded-lg px-4 py-2 text-sm shadow-lg">
+          {error}
+        </div>
+      )}
+
+      {/* Discard dialog overlay */}
+      <DiscardDialog gameState={gameState} />
+
+      {/* Main board area */}
+      <div className="flex-1 flex flex-col p-4">
+        <div className="flex-1">
+          <HexGrid gameState={gameState} />
+        </div>
+        <div className="mt-3">
+          <ActionPanel gameState={gameState} />
+        </div>
+      </div>
+
+      {/* Right sidebar */}
+      <div className="w-80 bg-gray-850 border-l border-gray-700 p-3 flex flex-col gap-3 overflow-y-auto">
+        <Scoreboard gameState={gameState} />
+        {myPlayer && (
+          <PlayerHud
+            player={myPlayer}
+            isCurrentPlayer={gameState.players[gameState.currentPlayerIndex]?.id === playerId}
+          />
+        )}
+        <TradeModal gameState={gameState} />
+        <GameLog gameState={gameState} />
+      </div>
     </div>
   );
 }
