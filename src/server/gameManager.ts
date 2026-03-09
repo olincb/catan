@@ -72,7 +72,6 @@ export function sanitizeStateForPlayer(
   for (const player of sanitized.players) {
     if (player.id !== playerId) {
       // Other players: hide dev card details but show count
-      const devCardCount = player.developmentCards.length + player.newDevCards.length;
       player.developmentCards = [];
       player.newDevCards = [];
       // Hide hidden VP

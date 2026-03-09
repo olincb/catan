@@ -7,7 +7,6 @@ import {
   type PlayerState,
   type PlayerAction,
   type ActionResult,
-  type GameLogEntry,
   type ResourceHand,
   GamePhase,
   TurnPhase,
@@ -47,9 +46,9 @@ import {
   applyYearOfPlenty,
   applyMonopoly,
 } from "./devCards";
-import { executeRobber, getStealTargets } from "./robber";
+import { executeRobber } from "./robber";
 import { updateSpecialCards, checkWinner } from "./scoring";
-import { v4 as uuidv4 } from "uuid";
+
 
 // --- Game initialization ---
 
@@ -178,19 +177,6 @@ function rollDice(): [number, number] {
 // We use a simple state convention: if turnPhase is Building and
 // the current player has no "pending setup action", they need to place settlement first.
 
-interface SetupTracker {
-  settlementPlaced: boolean;
-  roadPlaced: boolean;
-}
-
-const setupTrackers = new Map<string, SetupTracker>();
-
-function getSetupTracker(gameId: string, playerId: string): SetupTracker {
-  const key = `${gameId}:${playerId}:${Date.now()}`;
-  // We'll use a simpler approach: check the board state
-  return { settlementPlaced: false, roadPlaced: false };
-}
-
 // --- Main action dispatcher ---
 
 export function dispatchAction(
@@ -281,7 +267,7 @@ function handleSetupAction(
       return { success: false, error: "Invalid settlement location", state };
     }
 
-    let newState = placeSettlement(state, playerId, vertexId, true);
+    const newState = placeSettlement(state, playerId, vertexId, true);
     newState.setupLastPlacedVertex = vertexId;
 
     // During second setup round, give initial resources from adjacent hexes
@@ -831,7 +817,8 @@ function handleMaritimeTrade(
   return { success: true, state: result.state };
 }
 
-function handleEndTurn(state: GameState, playerId: string): ActionResult {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function handleEndTurn(state: GameState, _playerId: string): ActionResult {
   if (state.turnPhase === TurnPhase.PreRoll) {
     return { success: false, error: "Must roll dice before ending turn", state };
   }

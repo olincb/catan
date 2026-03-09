@@ -5,8 +5,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import type { GameState, Vertex as VertexType, Edge as EdgeType, Hex } from "../../engine/types";
-import { GamePhase, TurnPhase, HarborType, PLAYER_COLORS } from "../../engine/types";
+import type { GameState, Hex } from "../../engine/types";
+import { GamePhase, TurnPhase, HarborType } from "../../engine/types";
 import HexTile from "./HexTile";
 import VertexComponent from "./Vertex";
 import EdgeComponent from "./Edge";

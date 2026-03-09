@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { generateBoard } from "../board";
 import { createGame, dispatchAction } from "../state";
 import { GamePhase, TurnPhase, Resource, totalResources } from "../types";
+import type { GameState, Vertex } from "../types";
 
 describe("Board Generation", () => {
   it("generates a standard 4-player board with 19 hexes", () => {
@@ -66,8 +67,6 @@ describe("Board Generation", () => {
     const harborVertices = board.vertices.filter((v) => v.harbor !== null);
     // 9 harbors × 2 vertices each = 18 harbor vertices
     expect(harborVertices).toHaveLength(18);
-    // Count unique harbor types
-    const harborCounts = new Map<string, number>();
     // Each harbor edge has 2 vertices with the same type — count pairs
     const harborEdges = board.edges.filter((e) => {
       const v1 = board.vertices[e.vertexIds[0]];
@@ -224,8 +223,8 @@ describe("Setup Phase", () => {
 
     // Helper to place settlement + road for current player
     function placeSetupPair(s: GameState, pid: string): GameState {
-      const v = s.board.vertices.find((v) => v.hexIds.length >= 2 && !v.building &&
-        v.adjacentVertexIds.every((aid) => !s.board.vertices[aid].building)
+      const v = s.board.vertices.find((v: Vertex) => v.hexIds.length >= 2 && !v.building &&
+        v.adjacentVertexIds.every((aid: number) => !s.board.vertices[aid].building)
       )!;
       const r1 = dispatchAction(s, {
         playerId: pid,
@@ -233,7 +232,7 @@ describe("Setup Phase", () => {
       });
       expect(r1.success).toBe(true);
 
-      const edge = v.edgeIds.find((eid) => r1.state.board.edges[eid].road === null)!;
+      const edge = v.edgeIds.find((eid: number) => r1.state.board.edges[eid].road === null)!;
       const r2 = dispatchAction(r1.state, {
         playerId: pid,
         action: { type: "SETUP_PLACE_ROAD", edgeId: edge },

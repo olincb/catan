@@ -6,7 +6,7 @@
 
 import React from "react";
 import type { Vertex } from "../../engine/types";
-import { BuildingType, PLAYER_COLORS } from "../../engine/types";
+import { BuildingType } from "../../engine/types";
 
 interface VertexComponentProps {
   vertex: Vertex;

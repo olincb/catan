@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { GameState, PlayerState } from "../../engine/types";
+import type { PlayerState } from "../../engine/types";
 import { Resource, DevelopmentCardType, BUILDING_COSTS } from "../../engine/types";
 
 const RESOURCE_EMOJI: Record<Resource, string> = {

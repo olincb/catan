@@ -42,6 +42,7 @@ export default function DiceDisplay({ die1, die2 }: DiceDisplayProps) {
   const total = die1 + die2;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional animation trigger on dice change
     setAnimate(true);
     const t = setTimeout(() => setAnimate(false), 700);
     return () => clearTimeout(t);

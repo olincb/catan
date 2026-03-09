@@ -60,10 +60,6 @@ function shuffle<T>(array: T[]): T[] {
 // Corner i is shared by up to 3 hexes.
 // For a hex at (q, r), the 6 corners touch specific neighboring hexes.
 
-interface VertexKey {
-  hexIds: number[]; // sorted hex IDs that share this vertex
-}
-
 function hexToPixel(coord: HexCoord): { x: number; y: number } {
   const size = 1;
   const x = size * (3 / 2 * coord.q);
@@ -281,9 +277,6 @@ export function generateBoard(playerCount: number): BoardState {
 
   // Shuffle terrains
   const shuffledTerrains = shuffle(terrainDist);
-
-  // Assign number tokens to non-desert hexes, ensuring no adjacent 6/8
-  const nonDesertIndices = hexCoords.map((_, i) => i).filter((i) => shuffledTerrains[i] !== TerrainType.Desert);
 
   // Build adjacency map from hex coords for constraint checking
   const coordToIdx = new Map<string, number>();

@@ -2,7 +2,7 @@
 // Robber Mechanics
 // ============================================================
 
-import { type GameState, type PlayerState } from "./types";
+import { type GameState } from "./types";
 import { stealResource } from "./resources";
 
 /**

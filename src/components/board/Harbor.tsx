@@ -5,7 +5,7 @@
 "use client";
 
 import React from "react";
-import { HarborType, Resource } from "../../engine/types";
+import { HarborType } from "../../engine/types";
 
 const HARBOR_LABELS: Record<HarborType, { label: string; emoji: string }> = {
   [HarborType.Generic]: { label: "3:1", emoji: "⚓" },

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { create } from "zustand";
-import type { GameState, GameAction, Resource, ResourceHand } from "../engine/types";
+import type { GameState } from "../engine/types";
 
 export interface ChatMessage {
   playerId: string;

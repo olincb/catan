@@ -4,7 +4,6 @@
 
 import {
   type GameState,
-  type PlayerState,
   MIN_LONGEST_ROAD,
   MIN_LARGEST_ARMY,
   VICTORY_POINTS_TO_WIN,

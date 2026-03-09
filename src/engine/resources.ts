@@ -9,7 +9,6 @@ import {
   Resource,
   TERRAIN_TO_RESOURCE,
   ROBBER_HAND_LIMIT,
-  emptyResourceHand,
   totalResources,
 } from "./types";
 

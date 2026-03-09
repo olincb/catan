@@ -4,7 +4,6 @@
 
 import {
   type GameState,
-  type TradeOffer,
   type ResourceHand,
   Resource,
   hasResources,
