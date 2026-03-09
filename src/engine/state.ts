@@ -102,6 +102,24 @@ function log(state: GameState, message: string, playerId?: string): void {
   state.log.push({ timestamp: Date.now(), message, playerId });
 }
 
+const RESOURCE_EMOJI: Record<Resource, string> = {
+  [Resource.Brick]: "🧱",
+  [Resource.Lumber]: "🪵",
+  [Resource.Wool]: "🐑",
+  [Resource.Grain]: "🌾",
+  [Resource.Ore]: "🪨",
+};
+
+function formatResourceGains(gains: Partial<Record<Resource, number>>): string {
+  return Object.entries(gains)
+    .filter(([, count]) => (count ?? 0) > 0)
+    .map(([res, count]) => {
+      const emoji = RESOURCE_EMOJI[res as Resource] ?? res;
+      return count === 1 ? emoji : `${emoji}×${count}`;
+    })
+    .join(" ");
+}
+
 function getCurrentPlayer(state: GameState): PlayerState {
   return state.players[state.currentPlayerIndex];
 }
@@ -257,12 +275,17 @@ function handleSetupAction(
     if (state.phase === GamePhase.SetupReverse) {
       const vertex = newState.board.vertices[vertexId];
       const player = newState.players.find((p) => p.id === playerId)!;
+      const setupGains: Partial<Record<Resource, number>> = {};
       for (const hexId of vertex.hexIds) {
         const hex = newState.board.hexes[hexId];
         const resource = TERRAIN_TO_RESOURCE[hex.terrain];
         if (resource) {
           player.resources[resource] += 1;
+          setupGains[resource] = (setupGains[resource] ?? 0) + 1;
         }
+      }
+      if (Object.keys(setupGains).length > 0) {
+        log(newState, `${newState.players.find((p) => p.id === playerId)!.name} received ${formatResourceGains(setupGains)}`, playerId);
       }
     }
 
@@ -332,8 +355,19 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
     }
   } else {
     // Produce resources
-    newState = produceResources(newState, total);
+    const production = produceResources(newState, total);
+    newState = production.state;
     newState.turnPhase = TurnPhase.Trading;
+
+    // Log what each player received
+    if (production.gains.size === 0) {
+      log(newState, "No resources produced");
+    } else {
+      for (const [pid, gains] of production.gains) {
+        const pName = newState.players.find((p) => p.id === pid)?.name ?? "Unknown";
+        log(newState, `${pName} received ${formatResourceGains(gains)}`, pid);
+      }
+    }
   }
 
   return { success: true, state: newState };

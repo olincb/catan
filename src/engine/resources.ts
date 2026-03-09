@@ -13,13 +13,22 @@ import {
   totalResources,
 } from "./types";
 
+/** Per-player resource production details from a dice roll */
+export interface ProductionResult {
+  state: GameState;
+  /** Map of playerId → resources gained (only includes players who received something) */
+  gains: Map<string, Partial<Record<Resource, number>>>;
+}
+
 /**
  * Distribute resources based on a dice roll.
  * Each hex matching the roll produces resources for adjacent settlements/cities,
  * unless the robber is on that hex.
+ * Returns the new state and a map of what each player received.
  */
-export function produceResources(state: GameState, roll: number): GameState {
+export function produceResources(state: GameState, roll: number): ProductionResult {
   const newState = structuredClone(state);
+  const gains = new Map<string, Partial<Record<Resource, number>>>();
 
   // Find hexes matching the roll (skip robber hex)
   const producingHexes = newState.board.hexes.filter(
@@ -41,10 +50,15 @@ export function produceResources(state: GameState, roll: number): GameState {
 
       const amount = vertex.building.type === "city" ? 2 : 1;
       player.resources[resource] += amount;
+
+      // Track gains
+      if (!gains.has(player.id)) gains.set(player.id, {});
+      const playerGains = gains.get(player.id)!;
+      playerGains[resource] = (playerGains[resource] ?? 0) + amount;
     }
   }
 
-  return newState;
+  return { state: newState, gains };
 }
 
 /**

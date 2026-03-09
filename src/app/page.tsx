@@ -56,7 +56,7 @@ export default function Home() {
   useSocket();
   const { play: playSound, muted, toggleMute } = useSoundManager();
 
-  const { gameState, playerId, error } = useGameStore();
+  const { gameState, playerId, error, reconnecting } = useGameStore();
 
   // Track previous state for triggering sounds
   const prevTurnPhaseRef = useRef<TurnPhase | null>(null);
@@ -96,6 +96,19 @@ export default function Home() {
     prevTurnPhaseRef.current = gameState.turnPhase;
     prevCurrentPlayerRef.current = gameState.currentPlayerIndex;
   }, [gameState, playerId, playSound]);
+
+  // Reconnecting state
+  if (reconnecting) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center animate-pulse">
+          <div className="text-4xl mb-4">🔄</div>
+          <p className="text-white text-lg">Reconnecting to game...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait</p>
+        </div>
+      </div>
+    );
+  }
 
   // No game yet — show lobby
   if (!gameState) {

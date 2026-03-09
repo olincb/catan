@@ -28,6 +28,7 @@ export interface RoomInfo {
 interface GameStore {
   // Connection
   connected: boolean;
+  reconnecting: boolean;
   playerId: string | null;
   playerName: string;
   setPlayerName: (name: string) => void;
@@ -54,6 +55,7 @@ interface GameStore {
 
   // Connection state
   setConnected: (connected: boolean) => void;
+  setReconnecting: (reconnecting: boolean) => void;
   setPlayerId: (id: string | null) => void;
 
   // Reset
@@ -62,6 +64,7 @@ interface GameStore {
 
 export const useGameStore = create<GameStore>((set) => ({
   connected: false,
+  reconnecting: false,
   playerId: null,
   playerName: "",
   setPlayerName: (name) => set({ playerName: name }),
@@ -85,9 +88,11 @@ export const useGameStore = create<GameStore>((set) => ({
   setError: (error) => set({ error }),
 
   setConnected: (connected) => set({ connected }),
+  setReconnecting: (reconnecting) => set({ reconnecting }),
   setPlayerId: (playerId) => set({ playerId }),
 
-  reset: () =>
+  reset: () => {
+    try { sessionStorage.removeItem("catan_roomCode"); sessionStorage.removeItem("catan_playerId"); } catch { /* noop */ }
     set({
       room: null,
       gameState: null,
@@ -95,5 +100,7 @@ export const useGameStore = create<GameStore>((set) => ({
       selectedAction: null,
       error: null,
       playerId: null,
-    }),
+      reconnecting: false,
+    });
+  },
 }));
