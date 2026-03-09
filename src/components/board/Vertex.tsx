@@ -32,9 +32,9 @@ export default function VertexComponent({
   if (building) {
     const color = building.playerId; // We'll map this to actual color in parent
     if (building.type === BuildingType.Settlement) {
-      // Triangle for settlement
+      // House shape: rectangular base with triangular roof
       const s = size * 0.35;
-      const points = `${cx},${cy - s} ${cx - s},${cy + s * 0.7} ${cx + s},${cy + s * 0.7}`;
+      const points = `${cx - s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy} ${cx},${cy - s} ${cx - s*0.7},${cy}`;
       return (
         <polygon
           points={points}
@@ -44,18 +44,15 @@ export default function VertexComponent({
         />
       );
     }
-    // Square for city
-    const s = size * 0.35;
+    // Castle shape: wider base with a tower on top
+    const s = size * 0.4;
+    const points = `${cx-s},${cy+s*0.7} ${cx+s},${cy+s*0.7} ${cx+s},${cy-s*0.2} ${cx+s*0.3},${cy-s*0.2} ${cx+s*0.3},${cy-s} ${cx-s*0.3},${cy-s} ${cx-s*0.3},${cy-s*0.2} ${cx-s},${cy-s*0.2}`;
     return (
-      <rect
-        x={cx - s}
-        y={cy - s}
-        width={s * 2}
-        height={s * 2}
+      <polygon
+        points={points}
         fill={color}
         stroke="#333"
         strokeWidth={1.5}
-        rx={2}
       />
     );
   }

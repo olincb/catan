@@ -282,21 +282,52 @@ export function generateBoard(playerCount: number): BoardState {
   // Shuffle terrains
   const shuffledTerrains = shuffle(terrainDist);
 
-  // Assign number tokens to non-desert hexes
-  const shuffledTokens = shuffle(numberTokens);
-  let tokenIndex = 0;
+  // Assign number tokens to non-desert hexes, ensuring no adjacent 6/8
+  const nonDesertIndices = hexCoords.map((_, i) => i).filter((i) => shuffledTerrains[i] !== TerrainType.Desert);
 
-  const hexes: Hex[] = hexCoords.map((coord, i) => {
-    const terrain = shuffledTerrains[i];
-    const isDesert = terrain === TerrainType.Desert;
-    return {
-      id: i,
-      coord,
-      terrain,
-      numberToken: isDesert ? null : shuffledTokens[tokenIndex++] ?? null,
-      hasRobber: isDesert, // robber starts on desert
-    };
-  });
+  // Build adjacency map from hex coords for constraint checking
+  const coordToIdx = new Map<string, number>();
+  for (let i = 0; i < hexCoords.length; i++) {
+    coordToIdx.set(`${hexCoords[i].q},${hexCoords[i].r}`, i);
+  }
+
+  function hasAdjacentHighNumbers(tokens: (number | null)[]): boolean {
+    for (let i = 0; i < hexCoords.length; i++) {
+      const t = tokens[i];
+      if (t !== 6 && t !== 8) continue;
+      const coord = hexCoords[i];
+      for (const offset of HEX_NEIGHBORS) {
+        const neighborIdx = coordToIdx.get(`${coord.q + offset.q},${coord.r + offset.r}`);
+        if (neighborIdx !== undefined) {
+          const nt = tokens[neighborIdx];
+          if (nt === 6 || nt === 8) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  let assignedTokens: (number | null)[] = new Array(hexCoords.length).fill(null);
+  let attempts = 0;
+  const MAX_ATTEMPTS = 100;
+
+  do {
+    const shuffledTokens = shuffle(numberTokens);
+    let tokenIdx = 0;
+    assignedTokens = hexCoords.map((_, i) => {
+      if (shuffledTerrains[i] === TerrainType.Desert) return null;
+      return shuffledTokens[tokenIdx++] ?? null;
+    });
+    attempts++;
+  } while (hasAdjacentHighNumbers(assignedTokens) && attempts < MAX_ATTEMPTS);
+
+  const hexes: Hex[] = hexCoords.map((coord, i) => ({
+    id: i,
+    coord,
+    terrain: shuffledTerrains[i],
+    numberToken: assignedTokens[i],
+    hasRobber: shuffledTerrains[i] === TerrainType.Desert,
+  }));
 
   // Find the first desert hex for the robber
   const desertHex = hexes.find((h) => h.terrain === TerrainType.Desert);

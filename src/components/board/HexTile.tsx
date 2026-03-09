@@ -11,7 +11,7 @@ import { TerrainType } from "../../engine/types";
 const TERRAIN_COLORS: Record<TerrainType, string> = {
   [TerrainType.Hills]: "#c0392b",
   [TerrainType.Forest]: "#27ae60",
-  [TerrainType.Pasture]: "#a8e6cf",
+  [TerrainType.Pasture]: "#7ec850",
   [TerrainType.Fields]: "#f1c40f",
   [TerrainType.Mountains]: "#7f8c8d",
   [TerrainType.Desert]: "#f5deb3",

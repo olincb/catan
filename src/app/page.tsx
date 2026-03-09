@@ -101,10 +101,22 @@ export default function Home() {
   if (reconnecting) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center animate-pulse">
-          <div className="text-4xl mb-4">🔄</div>
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-pulse">🔄</div>
           <p className="text-white text-lg">Reconnecting to game...</p>
           <p className="text-gray-400 text-sm mt-2">Please wait</p>
+          <button
+            className="mt-4 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-4 rounded text-sm transition-colors"
+            onClick={() => {
+              useGameStore.getState().setReconnecting(false);
+              try {
+                sessionStorage.removeItem("catan_roomCode");
+                sessionStorage.removeItem("catan_playerId");
+              } catch {}
+            }}
+          >
+            ← Back to Lobby
+          </button>
         </div>
       </div>
     );

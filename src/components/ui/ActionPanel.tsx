@@ -6,7 +6,7 @@
 
 import React from "react";
 import type { GameState } from "../../engine/types";
-import { GamePhase, TurnPhase, DevelopmentCardType, Resource } from "../../engine/types";
+import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 
@@ -57,6 +57,11 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
     !gameState.activeTradeOffer;
   const mustRob = gameState.turnPhase === TurnPhase.Robbing;
 
+  const canAffordRoad = hasResources(myPlayer.resources, BUILDING_COSTS.road);
+  const canAffordSettlement = hasResources(myPlayer.resources, BUILDING_COSTS.settlement);
+  const canAffordCity = hasResources(myPlayer.resources, BUILDING_COSTS.city);
+  const canAffordDevCard = hasResources(myPlayer.resources, BUILDING_COSTS.developmentCard);
+
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
       {/* Dice */}
@@ -91,39 +96,57 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
           <>
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                selectedAction === "road"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                !canAffordRoad
+                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  : selectedAction === "road"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
+              disabled={!canAffordRoad}
+              title={!canAffordRoad ? "Need: 1 Brick, 1 Lumber" : "Place a road"}
               onClick={() => setSelectedAction(selectedAction === "road" ? null : "road")}
             >
               🛤️ Road
             </button>
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                selectedAction === "settlement"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                !canAffordSettlement
+                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  : selectedAction === "settlement"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
+              disabled={!canAffordSettlement}
+              title={!canAffordSettlement ? "Need: 1 Brick, 1 Lumber, 1 Wool, 1 Grain" : "Place a settlement"}
               onClick={() => setSelectedAction(selectedAction === "settlement" ? null : "settlement")}
             >
               🏠 Settlement
             </button>
             <button
               className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                selectedAction === "city"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                !canAffordCity
+                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  : selectedAction === "city"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
+              disabled={!canAffordCity}
+              title={!canAffordCity ? "Need: 3 Ore, 2 Grain" : "Upgrade to a city"}
               onClick={() => setSelectedAction(selectedAction === "city" ? null : "city")}
             >
               🏰 City
             </button>
             <button
-              className="bg-purple-700 hover:bg-purple-600 text-white py-2 px-3 rounded font-medium text-sm transition-colors"
+              className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
+                !canAffordDevCard
+                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  : "bg-purple-700 hover:bg-purple-600 text-white"
+              }`}
+              disabled={!canAffordDevCard}
+              title={!canAffordDevCard ? "Need: 1 Ore, 1 Wool, 1 Grain" : "Buy a development card"}
               onClick={() => sendAction({ type: "BUY_DEVELOPMENT_CARD" })}
             >
-              🃏 Buy Dev Card
+              🃏 Development Card
             </button>
           </>
         )}

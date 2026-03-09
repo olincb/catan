@@ -36,7 +36,7 @@ const COST_DISPLAY_NAMES: Record<string, string> = {
   road: "Road",
   settlement: "Settlement",
   city: "City",
-  developmentCard: "Dev Card",
+  developmentCard: "Development Card",
 };
 
 interface PlayerHudProps {
@@ -105,7 +105,7 @@ export default function PlayerHud({ player, isCurrentPlayer }: PlayerHudProps) {
         <div className="mt-2 text-xs text-gray-300 space-y-1">
           {Object.entries(BUILDING_COSTS).map(([name, costs]) => (
             <div key={name} className="flex items-center gap-1">
-              <span className="font-medium w-20 shrink-0">{COST_DISPLAY_NAMES[name] ?? name}:</span>
+              <span className="font-medium w-28 shrink-0">{COST_DISPLAY_NAMES[name] ?? name}:</span>
               {Object.entries(costs).map(([res, amount]) => (
                 <span key={res}>
                   {amount}{RESOURCE_EMOJI[res as Resource]}

@@ -61,9 +61,57 @@ export default function HexGrid({ gameState }: HexGridProps) {
       maxY = Math.max(maxY, cy + HEX_SIZE);
     }
 
+    // Compute beach border polygon (convex hull of hex corners, expanded)
+    const allCorners: { x: number; y: number }[] = [];
+    for (const { cx, cy } of hexPositions) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 180) * (60 * i);
+        allCorners.push({
+          x: cx + HEX_SIZE * Math.cos(angle),
+          y: cy + HEX_SIZE * Math.sin(angle),
+        });
+      }
+    }
+
+    // Simple convex hull (Graham scan)
+    function cross(O: {x:number;y:number}, A: {x:number;y:number}, B: {x:number;y:number}) {
+      return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+    }
+    const sorted = [...allCorners].sort((a, b) => a.x - b.x || a.y - b.y);
+    const lower: {x:number;y:number}[] = [];
+    for (const p of sorted) {
+      while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
+      lower.push(p);
+    }
+    const upper: {x:number;y:number}[] = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const p = sorted[i];
+      while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
+      upper.push(p);
+    }
+    lower.pop();
+    upper.pop();
+    const hull = [...lower, ...upper];
+
+    // Expand hull outward from centroid
+    const centroidX = hull.reduce((s, p) => s + p.x, 0) / hull.length;
+    const centroidY = hull.reduce((s, p) => s + p.y, 0) / hull.length;
+    const BEACH_EXPAND = 18;
+    const beachPoints = hull.map(p => {
+      const dx = p.x - centroidX;
+      const dy = p.y - centroidY;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      return {
+        x: p.x + (dx / dist) * BEACH_EXPAND,
+        y: p.y + (dy / dist) * BEACH_EXPAND,
+      };
+    });
+    const beachPath = beachPoints.map(p => `${p.x},${p.y}`).join(" ");
+
     return {
       hexPositions,
       vertexPixels,
+      beachPath,
       viewBox: {
         x: minX - PADDING,
         y: minY - PADDING,
@@ -124,6 +172,15 @@ export default function HexGrid({ gameState }: HexGridProps) {
       style={{ background: "#1a5276" }}
     >
       {/* Water background is the SVG background color */}
+
+      {/* Beach border */}
+      <polygon
+        points={layout.beachPath}
+        fill="#f4d9a0"
+        stroke="#d4b878"
+        strokeWidth={2}
+        opacity={0.85}
+      />
 
       {/* Hex tiles */}
       {layout.hexPositions.map(({ hex, cx, cy }) => (

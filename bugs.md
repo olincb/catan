@@ -14,3 +14,6 @@ update: this bug still occurs - no feedback when we try to increase the trade nu
 
 when a player refreshes the page, they do now successfully see "reconnecting..." but they don't actually reconnect to the game. we want their screen to load back to the state it was in before they refreshed, and we want them to be able to continue playing without any issues.
 
+## the trade section is labeled with "Maritime Trade"
+
+maritime trade is just one type of trade in the game, and it would be more accurate to label this section as "Trade" or "Trading". this also reminds me that I haven't tested maritime trade at all yet, but I haven't noticed a way to do it in the UI.

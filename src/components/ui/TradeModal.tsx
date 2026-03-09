@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type { GameState, ResourceHand } from "../../engine/types";
 import { Resource } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
@@ -46,6 +46,8 @@ export default function TradeModal({ gameState }: TradeModalProps) {
   const [offering, setOffering] = useState<Partial<ResourceHand>>({});
   const [requesting, setRequesting] = useState<Partial<ResourceHand>>({});
   const [tradeTarget, setTradeTarget] = useState<string>("all");
+  const [clampedResource, setClampedResource] = useState<string | null>(null);
+  const clampTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const isMyTurn = gameState.players[gameState.currentPlayerIndex]?.id === playerId;
@@ -231,11 +233,19 @@ export default function TradeModal({ gameState }: TradeModalProps) {
                     value={offering[res] ?? 0}
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
-                      setOffering({ ...offering, [res]: Math.min(Math.max(val, 0), have) });
+                      const clamped = Math.min(Math.max(val, 0), have);
+                      setOffering({ ...offering, [res]: clamped });
+                      if (val > have) {
+                        setClampedResource(res);
+                        if (clampTimerRef.current) clearTimeout(clampTimerRef.current);
+                        clampTimerRef.current = setTimeout(() => setClampedResource(null), 1500);
+                      }
                     }}
                     className="w-12 bg-gray-700 text-white text-center rounded px-1 py-0.5 text-sm"
                   />
-                  <span className="text-xs text-gray-500">/{have}</span>
+                  <span className={`text-xs transition-colors duration-300 ${clampedResource === res ? "text-red-400 font-bold" : "text-gray-500"}`}>
+                    {clampedResource === res ? `max ${have}` : `/${have}`}
+                  </span>
                 </div>
               );
             })}

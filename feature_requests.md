@@ -1,10 +1,6 @@
 # Feature Requests
 
 
-## allowing all players to bid on a proposed trade prior to the trade being accepted
-
-currently, when a player proposes a trade, all players can see and accept the trade. this means a quick player could swoop in and accept a trade not meant for them. I think we should have several trading modes: to a specific player, or to all players. if a trade is proposed to a specific player, only that player can accept the trade. if a trade is proposed to all players, then any player can accept the trade. the original trade proposer then needs to confirm the trade with the accepting player of their choice before the trade is executed.
-
 ## escape the "reconnecting..." screen
 
 when reconnecting, it might sit there for a while. give the player an option just to exit back to the main lobby screen.
@@ -32,3 +28,11 @@ It's probably better to prevent a player from entering build mode for an item at
 ## sheep/pasture tile color
 
 right now, the sheep/pasture tile is a mint color. it should be a more natural green color, to better represent grass and pastures. the current mint color is a bit too bright and doesn't fit well with the overall aesthetic of the game.
+
+## allow player to rejoin game from lobby if they were already let into the game
+
+right now, if a player gets sent back to the lobby and puts in the same game code, they get an error message, even if they were previously in that game. we want a player to be able to rejoin via game code, if they were one of the original players in the game, and they got sent back to the lobby for some reason.
+
+## show card count in the game log when trades are accepted
+
+when trades are accepted, the game log currently just shows that it was accepted. it would be nice to show exactly which cards were traded, and how many of each card were traded.
