@@ -35,30 +35,26 @@ docker run -p 8080:3000 -e PORT=3000 catan-online
 
 ```
 GitHub Actions → fly deploy → Fly.io (Docker) → catan.olincb.me
-catan.olincb.me → Route 53 CNAME → <app>.fly.dev → Fly.io Proxy (SSL) → Docker :3000
+catan.olincb.me → Route 53 A record → Fly.io Proxy (SSL) → Docker :3000
 ```
 
 Estimated cost: $0–2/month (free tier covers 1 shared-cpu-1x 256MB VM).
+
+> **Important:** Game state is in-memory, so all players must connect to the same machine.
+> Scale to exactly 1 machine: `fly scale count 1`
 
 ### Prerequisites
 
 1. [Fly.io account](https://fly.io/app/sign-up) with credit card on file
 2. [Fly CLI](https://fly.io/docs/flyctl/install/) installed and authenticated (`fly auth login`)
 
-### Launch
+### Configuration
 
-```bash
-fly launch
-```
-
-The wizard detects the Dockerfile and generates `fly.toml`. Edit it:
+The `fly.toml` is already committed to the repo. Key settings:
 
 ```toml
-app = 'catan-online'
-primary_region = 'iad'
-
-[build]
-  dockerfile = 'Dockerfile'
+app = 'olincb-catan'
+primary_region = 'ewr'
 
 [env]
   NODE_ENV = 'production'
@@ -67,17 +63,15 @@ primary_region = 'iad'
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = false    # Don't stop VM — kills WebSocket connections + game state
-  auto_start_machines = true
-  min_machines_running = 1      # Always keep 1 VM running
+  auto_stop_machines = 'off'   # Don't stop VM — kills WebSocket connections + game state
+  min_machines_running = 1     # Always keep 1 VM running
 
 [[vm]]
-  size = 'shared-cpu-1x'
-  memory = '256mb'
+  memory = '512mb'
+  cpus = 1
 ```
 
-Key settings:
-- `auto_stop_machines = false` — Fly normally stops idle VMs, which would kill active games
+- `auto_stop_machines = 'off'` — Fly normally stops idle VMs, which would kill active games
 - `force_https = true` — Redirects HTTP → HTTPS; Socket.IO uses `wss://` automatically
 
 ### Deploy
@@ -96,11 +90,12 @@ fly open          # Open in browser
 fly certs add catan.olincb.me
 ```
 
-Add a CNAME record in Route 53 (hosted zone for `olincb.me`):
+Add DNS records in Route 53 (hosted zone for `olincb.me`):
 
 | Record name | Type | Value | TTL |
 |-------------|------|-------|-----|
-| `catan` | CNAME | `catan-online.fly.dev` | 300 |
+| `catan` | A | *(IP from `fly certs add` output)* | 300 |
+| `catan` | AAAA | *(IPv6 from `fly certs add` output)* | 300 |
 
 Verify:
 ```bash
@@ -117,41 +112,7 @@ curl -I https://catan.olincb.me
 
 2. Add to GitHub: Repo → Settings → Secrets → `FLY_API_TOKEN`
 
-3. Create `.github/workflows/deploy.yml`:
-
-```yaml
-name: Test & Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-
-  deploy:
-    name: Deploy
-    needs: test
-    runs-on: ubuntu-latest
-    concurrency: deploy-group
-    steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-```
+3. The workflow is already at `.github/workflows/deploy.yml` — it runs lint + tests, then deploys on push to `main`.
 
 ### Useful Commands
 

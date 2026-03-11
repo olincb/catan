@@ -49,6 +49,10 @@ src/
 | `npm start` | Start production server |
 | `npm test` | Run tests with Vitest |
 
+## Live
+
+🎮 **https://catan.olincb.me**
+
 ## Deployment
 
-See [DEPLOY.md](DEPLOY.md) for Docker and EC2 deployment instructions.
+See [DEPLOY.md](DEPLOY.md) for Docker and Fly.io deployment instructions.
