@@ -1,5 +1,5 @@
 // ============================================================
-// Player HUD — Resource cards, dev cards, building costs
+// Player HUD — Resource cards, Development Cards, building costs
 // ============================================================
 
 "use client";
@@ -76,10 +76,10 @@ export default function PlayerHud({ player, isCurrentPlayer }: PlayerHudProps) {
         ))}
       </div>
 
-      {/* Dev cards */}
+      {/* Development Cards */}
       {player.developmentCards.length > 0 && (
         <div className="mb-2">
-          <div className="text-xs text-gray-400 mb-1">Dev Cards:</div>
+          <div className="text-xs text-gray-400 mb-1">Development Cards:</div>
           <div className="flex flex-wrap gap-1">
             {player.developmentCards.map((card, i) => (
               <span

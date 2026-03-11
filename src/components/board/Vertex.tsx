@@ -63,9 +63,16 @@ export default function VertexComponent({
         </g>
       );
     }
-    // Castle shape: wider base with a tower on top
-    const s = size * 0.4;
-    const points = `${cx-s},${cy+s*0.7} ${cx+s},${cy+s*0.7} ${cx+s},${cy-s*0.2} ${cx+s*0.3},${cy-s*0.2} ${cx+s*0.3},${cy-s} ${cx-s*0.3},${cy-s} ${cx-s*0.3},${cy-s*0.2} ${cx-s},${cy-s*0.2}`;
+    // City: stepped profile - lower house section + taller tower on the right
+    const s = size * 0.45;
+    const points = [
+      `${cx - s},${cy + s * 0.5}`,
+      `${cx + s},${cy + s * 0.5}`,
+      `${cx + s},${cy - s * 0.8}`,
+      `${cx + s * 0.3},${cy - s * 0.8}`,
+      `${cx + s * 0.3},${cy - s * 0.2}`,
+      `${cx - s},${cy - s * 0.2}`,
+    ].join(' ');
     return (
       <polygon
         points={points}
@@ -101,6 +108,7 @@ export default function VertexComponent({
         r={3}
         fill="#3498db"
         opacity={0.5}
+        pointerEvents="none"
       />
     );
   }

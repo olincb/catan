@@ -10,55 +10,50 @@ import {
 } from "./types";
 
 /**
- * Compute the longest road length for a given player using DFS.
- * Roads are broken by opponent buildings.
+ * Compute the longest road length for a given player using vertex-tracking DFS.
+ * Roads are broken by opponent buildings. No vertex may be visited twice (simple path).
  */
 export function computeLongestRoad(
   state: GameState,
   playerId: string
 ): number {
   const { vertices, edges } = state.board;
-
-  // Build adjacency: for each vertex, list edges that belong to this player
   const playerEdges = edges.filter((e) => e.road?.playerId === playerId);
   if (playerEdges.length === 0) return 0;
 
-  // Build graph: vertex → [connected edges owned by player]
-  const vertexToEdges = new Map<number, number[]>();
+  // Build adjacency: vertex -> [{neighborVertex, edgeId}]
+  const adjacency = new Map<number, { vertex: number; edge: number }[]>();
   for (const edge of playerEdges) {
-    for (const vid of edge.vertexIds) {
-      if (!vertexToEdges.has(vid)) vertexToEdges.set(vid, []);
-      vertexToEdges.get(vid)!.push(edge.id);
-    }
+    const [v1, v2] = edge.vertexIds;
+    if (!adjacency.has(v1)) adjacency.set(v1, []);
+    if (!adjacency.has(v2)) adjacency.set(v2, []);
+    adjacency.get(v1)!.push({ vertex: v2, edge: edge.id });
+    adjacency.get(v2)!.push({ vertex: v1, edge: edge.id });
   }
 
   let maxLength = 0;
 
-  // DFS from each player edge
-  function dfs(edgeId: number, visited: Set<number>): number {
-    visited.add(edgeId);
-    const edge = edges[edgeId];
-    let best = 1;
-
-    for (const vid of edge.vertexIds) {
-      // Can't pass through opponent's building
-      const building = vertices[vid].building;
+  function dfs(currentVertex: number, visitedVertices: Set<number>): number {
+    let best = 0;
+    const neighbors = adjacency.get(currentVertex) ?? [];
+    for (const { vertex: nextVertex } of neighbors) {
+      if (visitedVertices.has(nextVertex)) continue;
+      // Opponent building blocks the path
+      const building = vertices[nextVertex].building;
       if (building && building.playerId !== playerId) continue;
 
-      const nextEdges = vertexToEdges.get(vid) ?? [];
-      for (const nextEdgeId of nextEdges) {
-        if (visited.has(nextEdgeId)) continue;
-        const length = 1 + dfs(nextEdgeId, visited);
-        best = Math.max(best, length);
-      }
+      visitedVertices.add(nextVertex);
+      const length = 1 + dfs(nextVertex, visitedVertices);
+      best = Math.max(best, length);
+      visitedVertices.delete(nextVertex);
     }
-
-    visited.delete(edgeId);
     return best;
   }
 
-  for (const edge of playerEdges) {
-    const length = dfs(edge.id, new Set());
+  // Start DFS from each vertex in the player's road network
+  for (const [startVertex] of adjacency) {
+    const visited = new Set([startVertex]);
+    const length = dfs(startVertex, visited);
     maxLength = Math.max(maxLength, length);
   }
 

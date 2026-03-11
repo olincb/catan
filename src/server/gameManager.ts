@@ -2,7 +2,7 @@
 // Game Manager — Manages active game instances
 // ============================================================
 
-import { type GameState, type PlayerAction, type ActionResult } from "../engine/types";
+import { type GameState, type PlayerAction, type ActionResult, GamePhase } from "../engine/types";
 import { createGame, dispatchAction } from "../engine/state";
 import { v4 as uuidv4 } from "uuid";
 
@@ -68,6 +68,12 @@ export function sanitizeStateForPlayer(
   playerId: string
 ): GameState {
   const sanitized = structuredClone(state);
+
+  // When game is over, reveal everything (except deck)
+  if (sanitized.phase === GamePhase.Finished) {
+    sanitized.developmentCardDeck = [];
+    return sanitized;
+  }
 
   for (const player of sanitized.players) {
     if (player.id !== playerId) {

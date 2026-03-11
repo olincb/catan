@@ -24,7 +24,7 @@ import {
   markPlayerDisconnected,
   markPlayerReconnected,
 } from "./gameManager";
-import type { GameAction } from "../engine/types";
+import { type GameAction, GamePhase } from "../engine/types";
 
 export function setupSocketHandlers(io: Server): void {
   io.on("connection", (socket: Socket) => {
@@ -52,19 +52,26 @@ export function setupSocketHandlers(io: Server): void {
 
       socket.join(result.room.code);
 
-      // If game is in progress, this is a rejoin — send game state
+      // If game exists, check whether it's still in progress or finished
       if (result.room.gameId) {
-        markPlayerReconnected(result.room.gameId, result.playerId);
         const state = getGameState(result.room.gameId);
-        if (state) {
+        if (state && state.phase === GamePhase.Finished) {
+          // Game is finished — clear it so room can be reused
+          result.room.gameId = null;
+          // Reset all players to unready for a new game
+          for (const p of result.room.players) {
+            p.ready = false;
+          }
+          // Fall through to normal lobby join below
+        } else if (state) {
+          // Game in progress — reconnect
+          markPlayerReconnected(result.room.gameId, result.playerId);
           const sanitized = sanitizeStateForPlayer(state, result.playerId);
-          // Send room_joined first so client saves session + sets playerId
           socket.emit("room_joined", {
             roomCode: result.room.code,
             playerId: result.playerId,
             room: serializeRoom(result.room),
           });
-          // Then send game state to restore the game
           socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(result.room) });
           socket.to(result.room.code).emit("player_reconnected", {
             playerId: result.playerId,

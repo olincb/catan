@@ -3,6 +3,8 @@
 // ============================================================
 
 import { v4 as uuidv4 } from "uuid";
+import { getGameState } from "./gameManager";
+import { GamePhase } from "../engine/types";
 
 export interface RoomPlayer {
   id: string;
@@ -73,18 +75,28 @@ export function joinRoom(
 
   // If game is in progress, check if this is a returning player
   if (room.gameId) {
-    const existingPlayer = room.players.find(
-      (p) => p.name.toLowerCase() === playerName.toLowerCase()
-    );
-    if (!existingPlayer) {
-      return { error: "Game already in progress" };
+    // If the game is finished, clear gameId so room can be reused
+    const gameState = getGameState(room.gameId);
+    if (gameState && gameState.phase === GamePhase.Finished) {
+      room.gameId = null;
+      for (const p of room.players) {
+        p.ready = false;
+      }
+      // Fall through to normal join logic
+    } else {
+      const existingPlayer = room.players.find(
+        (p) => p.name.toLowerCase() === playerName.toLowerCase()
+      );
+      if (!existingPlayer) {
+        return { error: "Game already in progress" };
+      }
+      // Rejoin as the existing player
+      const reconnectResult = reconnectPlayer(code, existingPlayer.id, socketId);
+      if ("error" in reconnectResult) {
+        return { error: reconnectResult.error };
+      }
+      return { room: reconnectResult.room, playerId: existingPlayer.id };
     }
-    // Rejoin as the existing player
-    const reconnectResult = reconnectPlayer(code, existingPlayer.id, socketId);
-    if ("error" in reconnectResult) {
-      return { error: reconnectResult.error };
-    }
-    return { room: reconnectResult.room, playerId: existingPlayer.id };
   }
 
   if (room.players.length >= room.maxPlayers) return { error: "Room is full" };

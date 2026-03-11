@@ -6,7 +6,8 @@
 
 import React, { useMemo } from "react";
 import type { GameState, Hex } from "../../engine/types";
-import { GamePhase, TurnPhase, HarborType } from "../../engine/types";
+import { GamePhase, TurnPhase, HarborType, BuildingType } from "../../engine/types";
+import { getValidRoadEdges } from "../../engine/building";
 import HexTile from "./HexTile";
 import VertexComponent from "./Vertex";
 import EdgeComponent from "./Edge";
@@ -119,9 +120,37 @@ export default function HexGrid({ gameState }: HexGridProps) {
     if (isSetup) {
       sendAction({ type: "SETUP_PLACE_ROAD", edgeId });
     } else if (store.selectedAction === "roadBuilding") {
-      const edges = [...store.roadBuildingEdges, edgeId];
       const myPlayer = gameState.players.find((p) => p.id === playerId);
       const onlyOneRoadLeft = myPlayer ? myPlayer.roadsRemaining <= 1 : false;
+
+      // Client-side validation: check edge is valid for road placement
+      const validEdges = getValidRoadEdges(gameState, playerId!, false, undefined, true);
+      // Also consider edges adjacent to the first optimistic road
+      const firstEdge = store.roadBuildingEdges[0];
+      let isValidEdge = validEdges.includes(edgeId);
+      if (!isValidEdge && firstEdge !== undefined) {
+        // Check if edgeId is adjacent to the first optimistic road
+        const firstEdgeData = gameState.board.edges[firstEdge];
+        const thisEdgeData = gameState.board.edges[edgeId];
+        if (firstEdgeData && thisEdgeData && !thisEdgeData.road) {
+          const firstVertices = new Set(firstEdgeData.vertexIds);
+          const sharesVertex = thisEdgeData.vertexIds.some((vid) => firstVertices.has(vid));
+          if (sharesVertex) {
+            // Ensure the shared vertex isn't blocked by opponent building
+            const sharedVid = thisEdgeData.vertexIds.find((vid) => firstVertices.has(vid))!;
+            const sharedVertex = gameState.board.vertices[sharedVid];
+            const blocked = sharedVertex?.building !== null && sharedVertex?.building?.playerId !== playerId;
+            if (!blocked) isValidEdge = true;
+          }
+        }
+      }
+
+      if (!isValidEdge) {
+        store.setError("Invalid road location");
+        return;
+      }
+
+      const edges = [...store.roadBuildingEdges, edgeId];
 
       if (edges.length >= 2 || (edges.length === 1 && onlyOneRoadLeft)) {
         sendAction({
@@ -198,11 +227,14 @@ export default function HexGrid({ gameState }: HexGridProps) {
       ))}
 
       {/* Hex tiles */}
-      {layout.hexPositions.map(({ hex, cx, cy }) => (
-        <g key={`hex-${hex.id}`} onClick={() => handleHexClick(hex.id)} className="cursor-pointer">
-          <HexTile hex={hex} cx={cx} cy={cy} size={HEX_SIZE} />
-        </g>
-      ))}
+      {layout.hexPositions.map(({ hex, cx, cy }) => {
+        const isHexClickable = isMyTurn && (gameState.turnPhase === TurnPhase.Robbing || useGameStore.getState().pendingKnight);
+        return (
+          <g key={`hex-${hex.id}`} onClick={() => handleHexClick(hex.id)} className={isHexClickable ? "cursor-pointer" : ""}>
+            <HexTile hex={hex} cx={cx} cy={cy} size={HEX_SIZE} />
+          </g>
+        );
+      })}
 
       {/* Edges (roads) */}
       {gameState.board.edges.map((edge) => {
@@ -211,7 +243,15 @@ export default function HexGrid({ gameState }: HexGridProps) {
         if (!p1 || !p2) return null;
 
         const isValidRoad = isMyTurn && (selectedAction === "road" || selectedAction === "roadBuilding" || isSetup);
-        const roadColor = edge.road ? playerColorMap.get(edge.road.playerId) : undefined;
+
+        // Optimistic render for road building: show first road immediately
+        const { roadBuildingEdges } = useGameStore.getState();
+        const isOptimisticRoad = !edge.road && roadBuildingEdges.includes(edge.id);
+        const roadColor = edge.road
+          ? playerColorMap.get(edge.road.playerId)
+          : isOptimisticRoad
+            ? playerColorMap.get(playerId!)
+            : undefined;
 
         return (
           <EdgeComponent
@@ -234,11 +274,16 @@ export default function HexGrid({ gameState }: HexGridProps) {
         const pos = layout.vertexPixels.get(vertex.id);
         if (!pos) return null;
 
-        const isValidPlacement = isMyTurn && (
-          selectedAction === "settlement" ||
-          selectedAction === "city" ||
-          isSetup
-        );
+        let isValidForVertex = false;
+        if (isMyTurn) {
+          if (isSetup && !vertex.building) {
+            isValidForVertex = true;
+          } else if (selectedAction === "settlement" && !vertex.building) {
+            isValidForVertex = true;
+          } else if (selectedAction === "city" && vertex.building?.type === BuildingType.Settlement && vertex.building?.playerId === playerId) {
+            isValidForVertex = true;
+          }
+        }
 
         // Replace playerId with actual color for rendering
         const vertexWithColor = vertex.building
@@ -258,8 +303,8 @@ export default function HexGrid({ gameState }: HexGridProps) {
             cx={pos.x}
             cy={pos.y}
             size={HEX_SIZE}
-            isValid={isValidPlacement}
-            isSelectable={isValidPlacement}
+            isValid={isValidForVertex}
+            isSelectable={isValidForVertex}
             onClick={() => handleVertexClick(vertex.id)}
           />
         );
@@ -312,8 +357,8 @@ export default function HexGrid({ gameState }: HexGridProps) {
                 stroke={color} strokeWidth={2} strokeDasharray="4,3" opacity={0.7}
               />
               {/* Small dock dots on the vertices */}
-              <circle cx={h.v1x} cy={h.v1y} r={4} fill={color} opacity={0.6} />
-              <circle cx={h.v2x} cy={h.v2y} r={4} fill={color} opacity={0.6} />
+              <circle cx={h.v1x} cy={h.v1y} r={4} fill={color} opacity={0.6} pointerEvents="none" />
+              <circle cx={h.v2x} cy={h.v2y} r={4} fill={color} opacity={0.6} pointerEvents="none" />
               {/* Harbor badge */}
               <Harbor harborType={h.harbor} cx={h.mx} cy={h.my} size={HEX_SIZE} />
             </g>

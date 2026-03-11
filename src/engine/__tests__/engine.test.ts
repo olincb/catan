@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { generateBoard } from "../board";
 import { createGame, dispatchAction } from "../state";
-import { GamePhase, TurnPhase, Resource, totalResources } from "../types";
-import type { GameState, Vertex } from "../types";
+import { computeLongestRoad } from "../scoring";
+import { GamePhase, TurnPhase, Resource, BuildingType, totalResources } from "../types";
+import type { GameState, BoardState, Vertex, Edge } from "../types";
 
 describe("Board Generation", () => {
   it("generates a standard 4-player board with 19 hexes", () => {
@@ -282,5 +283,146 @@ describe("Resource Helpers", () => {
         [Resource.Ore]: 4,
       })
     ).toBe(10);
+  });
+});
+
+// -- Helpers for longest road tests --
+
+function makeVertex(id: number, overrides?: Partial<Vertex>): Vertex {
+  return {
+    id,
+    hexIds: [],
+    edgeIds: [],
+    adjacentVertexIds: [],
+    position: { x: 0, y: 0 },
+    building: null,
+    harbor: null,
+    ...overrides,
+  };
+}
+
+function makeEdge(id: number, v1: number, v2: number, playerId: string | null): Edge {
+  return {
+    id,
+    vertexIds: [v1, v2],
+    hexIds: [],
+    road: playerId ? { playerId } : null,
+  };
+}
+
+function makeGameStateForRoads(vertices: Vertex[], edges: Edge[]): GameState {
+  return {
+    id: "test-road",
+    board: {
+      hexes: [],
+      vertices,
+      edges,
+      robberHexId: 0,
+    },
+    players: [],
+    currentPlayerIndex: 0,
+    phase: GamePhase.Playing,
+    turnPhase: TurnPhase.PreRoll,
+    turnNumber: 1,
+    setupRound: 0,
+    setupLastPlacedVertex: null,
+    diceRoll: null,
+    developmentCardDeck: [],
+    discardingPlayerIds: [],
+    activeTradeOffer: null,
+    longestRoadPlayerId: null,
+    largestArmyPlayerId: null,
+    winnerId: null,
+    log: [],
+  };
+}
+
+describe("longest road computation", () => {
+  it("straight line of 5 roads returns 5", () => {
+    // v0 - v1 - v2 - v3 - v4 - v5
+    const vertices = Array.from({ length: 6 }, (_, i) => makeVertex(i));
+    const edges = [
+      makeEdge(0, 0, 1, "p1"),
+      makeEdge(1, 1, 2, "p1"),
+      makeEdge(2, 2, 3, "p1"),
+      makeEdge(3, 3, 4, "p1"),
+      makeEdge(4, 4, 5, "p1"),
+    ];
+    const state = makeGameStateForRoads(vertices, edges);
+    expect(computeLongestRoad(state, "p1")).toBe(5);
+  });
+
+  it("fork (3+2 from a junction) returns 4, not 5", () => {
+    // Junction at v0 with 3 branches:
+    // Branch A: v0 - v1 - v2 (2 edges)
+    // Branch B: v0 - v3 - v4 (2 edges)
+    // Branch C: v0 - v5 (1 edge)
+    // Total: 5 edges. Longest simple path = 2 + 2 = 4 (through v0)
+    const vertices = Array.from({ length: 6 }, (_, i) => makeVertex(i));
+    const edges = [
+      makeEdge(0, 0, 1, "p1"),
+      makeEdge(1, 1, 2, "p1"),
+      makeEdge(2, 0, 3, "p1"),
+      makeEdge(3, 3, 4, "p1"),
+      makeEdge(4, 0, 5, "p1"),
+    ];
+    const state = makeGameStateForRoads(vertices, edges);
+    expect(computeLongestRoad(state, "p1")).toBe(4);
+  });
+
+  it("loop/cycle returns correct count without revisiting vertices", () => {
+    // Triangle: v0 - v1 - v2 - v0 (3 edges, 3 vertices)
+    const vertices = Array.from({ length: 3 }, (_, i) => makeVertex(i));
+    const edges = [
+      makeEdge(0, 0, 1, "p1"),
+      makeEdge(1, 1, 2, "p1"),
+      makeEdge(2, 2, 0, "p1"),
+    ];
+    const state = makeGameStateForRoads(vertices, edges);
+    // Simple path in a triangle: can use at most 2 edges
+    expect(computeLongestRoad(state, "p1")).toBe(2);
+  });
+
+  it("broken chain with opponent settlement counts only longer segment", () => {
+    // v0 - v1 - v2(opponent) - v3 - v4
+    // All roads belong to p1, but v2 has opponent building
+    const vertices = Array.from({ length: 5 }, (_, i) => makeVertex(i));
+    vertices[2] = makeVertex(2, {
+      building: { type: BuildingType.Settlement, playerId: "p2" },
+    });
+    const edges = [
+      makeEdge(0, 0, 1, "p1"),
+      makeEdge(1, 1, 2, "p1"),
+      makeEdge(2, 2, 3, "p1"),
+      makeEdge(3, 3, 4, "p1"),
+    ];
+    const state = makeGameStateForRoads(vertices, edges);
+    // From v2 (start), can go to v1->v0 (2) or v3->v4 (2). Best = 2.
+    // From v0: v0->v1, then v1->v2 blocked. Length=1.
+    // From v4: v4->v3, then v3->v2 blocked. Length=1.
+    expect(computeLongestRoad(state, "p1")).toBe(2);
+  });
+
+  it("no roads returns 0", () => {
+    const vertices = Array.from({ length: 3 }, (_, i) => makeVertex(i));
+    const edges = [makeEdge(0, 0, 1, null)];
+    const state = makeGameStateForRoads(vertices, edges);
+    expect(computeLongestRoad(state, "p1")).toBe(0);
+  });
+
+  it("larger cycle (hexagon) returns correct count", () => {
+    // Hexagon: v0-v1-v2-v3-v4-v5-v0 (6 edges, 6 vertices)
+    const vertices = Array.from({ length: 6 }, (_, i) => makeVertex(i));
+    const edges = [
+      makeEdge(0, 0, 1, "p1"),
+      makeEdge(1, 1, 2, "p1"),
+      makeEdge(2, 2, 3, "p1"),
+      makeEdge(3, 3, 4, "p1"),
+      makeEdge(4, 4, 5, "p1"),
+      makeEdge(5, 5, 0, "p1"),
+    ];
+    const state = makeGameStateForRoads(vertices, edges);
+    // Cycle of 6: longest simple path = 5 edges (visit all 6 vertices)
+    expect(computeLongestRoad(state, "p1")).toBe(5);
   });
 });

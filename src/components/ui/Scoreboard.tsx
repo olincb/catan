@@ -46,20 +46,26 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                 {isCurrent && <span className="text-xs text-yellow-400">◀</span>}
               </div>
               <div className="flex items-center gap-2 text-xs">
-                {hasLongestRoad && (
-                  <span className="bg-blue-900 text-blue-300 px-1 rounded" title="Longest Road">
-                    🛤️
+                {player.longestRoadLength > 0 && (
+                  <span
+                    className={`px-1 rounded ${hasLongestRoad ? "bg-blue-900 text-blue-300" : "text-gray-500"}`}
+                    title={`Road length: ${player.longestRoadLength}${hasLongestRoad ? " (Longest Road!)" : ""}`}
+                  >
+                    🛤️{player.longestRoadLength}
                   </span>
                 )}
-                {hasLargestArmy && (
-                  <span className="bg-red-900 text-red-300 px-1 rounded" title="Largest Army">
-                    🗡️
+                {player.playedKnights > 0 && (
+                  <span
+                    className={`px-1 rounded ${hasLargestArmy ? "bg-red-900 text-red-300" : "text-gray-500"}`}
+                    title={`Knights played: ${player.playedKnights}${hasLargestArmy ? " (Largest Army!)" : ""}`}
+                  >
+                    ⚔️{player.playedKnights}
                   </span>
                 )}
                 <span className="text-gray-500" title="Cards in hand">
                   🃏{totalResources(player.resources)}
                 </span>
-                <span className="text-gray-500" title="Dev cards">
+                <span className="text-gray-500" title="Development Cards">
                   📜{player.developmentCards.length}
                 </span>
                 <span className="text-yellow-400 font-bold">
