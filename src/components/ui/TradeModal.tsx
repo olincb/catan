@@ -13,7 +13,7 @@ import { useSocket } from "../../hooks/useSocket";
 
 const RESOURCE_EMOJI: Record<Resource, string> = {
   [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🪵",
+  [Resource.Lumber]: "🌲",
   [Resource.Wool]: "🐑",
   [Resource.Grain]: "🌾",
   [Resource.Ore]: "⛰️",

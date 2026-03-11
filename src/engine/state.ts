@@ -107,10 +107,10 @@ function log(state: GameState, message: string, playerId?: string): void {
 
 const RESOURCE_EMOJI: Record<Resource, string> = {
   [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🪵",
+  [Resource.Lumber]: "🌲",
   [Resource.Wool]: "🐑",
   [Resource.Grain]: "🌾",
-  [Resource.Ore]: "🪨",
+  [Resource.Ore]: "⛰️",
 };
 
 function formatResourceGains(gains: Partial<Record<Resource, number>>): string {

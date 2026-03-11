@@ -8,7 +8,7 @@ import React, { useState, useCallback } from "react";
 import { Resource } from "../../engine/types";
 
 const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Lumber]: "🪵",
+  [Resource.Lumber]: "🌲",
   [Resource.Brick]: "🧱",
   [Resource.Wool]: "🐑",
   [Resource.Grain]: "🌾",
