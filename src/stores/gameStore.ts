@@ -4,6 +4,7 @@
 
 import { create } from "zustand";
 import type { GameState } from "../engine/types";
+import { DevelopmentCardType } from "../engine/types";
 
 export interface ChatMessage {
   playerId: string;
@@ -62,6 +63,10 @@ interface GameStore {
   setPendingRobberAction: (action: "knight" | "robber" | null) => void;
   clearRobberState: () => void;
 
+  // Dev card reveal
+  drawnDevCard: DevelopmentCardType | null;
+  clearDrawnDevCard: () => void;
+
   // Error
   error: string | null;
   setError: (error: string | null) => void;
@@ -91,9 +96,20 @@ export const useGameStore = create<GameStore>((set) => ({
       const turnChanged =
         prev.gameState &&
         prev.gameState.currentPlayerIndex !== gameState.currentPlayerIndex;
+
+      // Detect a newly drawn dev card for this player
+      let drawnDevCard = prev.drawnDevCard;
+      if (prev.gameState && prev.playerId) {
+        const prevPlayer = prev.gameState.players.find((p) => p.id === prev.playerId);
+        const newPlayer = gameState.players.find((p) => p.id === prev.playerId);
+        if (prevPlayer && newPlayer && newPlayer.newDevCards.length > prevPlayer.newDevCards.length) {
+          drawnDevCard = newPlayer.newDevCards[newPlayer.newDevCards.length - 1];
+        }
+      }
+
       return turnChanged
-        ? { gameState, selectedAction: null, roadBuildingEdges: [], pendingKnight: false, pendingRobberHex: null, pendingStealTargets: [], pendingRobberAction: null }
-        : { gameState };
+        ? { gameState, drawnDevCard, selectedAction: null, roadBuildingEdges: [], pendingKnight: false, pendingRobberHex: null, pendingStealTargets: [], pendingRobberAction: null }
+        : { gameState, drawnDevCard };
     }),
 
   chatMessages: [],
@@ -122,6 +138,9 @@ export const useGameStore = create<GameStore>((set) => ({
     pendingRobberAction: null,
   }),
 
+  drawnDevCard: null,
+  clearDrawnDevCard: () => set({ drawnDevCard: null }),
+
   error: null,
   setError: (error) => set({ error }),
 
@@ -141,6 +160,7 @@ export const useGameStore = create<GameStore>((set) => ({
       pendingRobberHex: null,
       pendingStealTargets: [],
       pendingRobberAction: null,
+      drawnDevCard: null,
       error: null,
       playerId: null,
       reconnecting: false,
