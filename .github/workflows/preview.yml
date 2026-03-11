@@ -1,0 +1,43 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency:
+  group: preview-${{ github.event.number }}
+
+jobs:
+  test:
+    name: Lint & Test
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  preview:
+    name: Deploy Preview
+    needs: test
+    if: always() && (needs.test.result == 'success' || github.event.action == 'closed')
+    runs-on: ubuntu-latest
+    environment:
+      name: preview-${{ github.event.number }}
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy or destroy preview app
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.2.1
+        with:
+          config: fly.preview.toml
+          region: ewr
+          org: personal
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

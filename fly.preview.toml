@@ -1,0 +1,27 @@
+# Fly.io config for ephemeral PR preview apps.
+# Used by superfly/fly-pr-review-apps — app name is set dynamically.
+#
+# Key difference from production (fly.toml):
+#   auto_stop_machines = "stop" — VM stops when all connections drop ($0 when idle).
+#   WebSocket connections count as active, so the machine stays up while anyone has a tab open.
+#   Game state is lost on full disconnect, which is fine for throwaway previews.
+
+primary_region = 'ewr'
+
+[build]
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '256mb'
+  cpus = 1

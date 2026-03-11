@@ -105,14 +105,30 @@ curl -I https://catan.olincb.me
 
 ### GitHub Actions CI/CD
 
-1. Create a deploy token:
+1. Create a deploy token with **org-level** permissions (needed for preview app creation):
    ```bash
-   fly tokens create deploy -x 999999h
+   fly tokens create org -x 999999h
    ```
 
 2. Add to GitHub: Repo → Settings → Secrets → `FLY_API_TOKEN`
 
-3. The workflow is already at `.github/workflows/deploy.yml` — it runs lint + tests, then deploys on push to `main`.
+3. Workflows:
+   - **`deploy.yml`** — push to `main` → lint + test → deploy to production (`olincb-catan`)
+   - **`ci.yml`** — lint + test on all PRs
+   - **`preview.yml`** — deploys ephemeral preview apps for each PR
+
+### PR Preview Deployments
+
+Every PR gets an ephemeral Fly.io app via `superfly/fly-pr-review-apps`. The preview URL is posted as a PR comment.
+
+- Config: `fly.preview.toml` (separate from production `fly.toml`)
+- `auto_stop_machines = "stop"` — VM stops when all connections drop ($0 when idle)
+- `auto_start_machines = true` — VM restarts on next request
+- `min_machines_running = 0` — allows full shutdown
+- 256MB RAM (smaller than production)
+- App is destroyed when the PR is closed or merged
+
+**Note:** Game state is lost when the preview VM stops (all players disconnect). This is expected — previews are for testing, not persistent games.
 
 ### Useful Commands
 
