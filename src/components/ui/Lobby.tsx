@@ -4,12 +4,12 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 import { PLAYER_COLORS } from "../../engine/types";
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, title, label }: { text: string; title?: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text).then(() => {
@@ -21,9 +21,9 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="bg-gray-600 hover:bg-gray-500 text-white rounded px-2 py-1 text-sm transition-colors"
-      title="Copy room code"
+      title={title ?? "Copy"}
     >
-      {copied ? "✓" : "📋"}
+      {copied ? "✓ Copied!" : (label ?? "📋")}
     </button>
   );
 }
@@ -33,6 +33,16 @@ export default function Lobby() {
   const { createRoom, joinRoom, leaveRoom, setReady, startGame } = useSocket();
   const [roomCode, setRoomCode] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
+
+  // Pre-fill room code from invite link (?join=CODE)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const joinCode = params.get("join");
+    if (joinCode) {
+      setRoomCode(joinCode.toUpperCase());
+      history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   // Not in a room — show create/join
   if (!room) {
@@ -131,7 +141,12 @@ export default function Lobby() {
           <span className="bg-gray-700 text-yellow-400 font-mono text-2xl tracking-[0.3em] px-4 py-1 rounded">
             {room.code}
           </span>
-          <CopyButton text={room.code} />
+          <CopyButton text={room.code} title="Copy room code" />
+          <CopyButton
+            text={`${window.location.origin}${window.location.pathname}?join=${room.code}`}
+            title="Copy invite link"
+            label="🔗 Invite"
+          />
         </div>
 
         {error && (
