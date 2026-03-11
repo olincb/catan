@@ -46,8 +46,21 @@ interface GameStore {
   addChatMessage: (msg: ChatMessage) => void;
 
   // UI state
-  selectedAction: "road" | "settlement" | "city" | null;
-  setSelectedAction: (action: "road" | "settlement" | "city" | null) => void;
+  selectedAction: "road" | "settlement" | "city" | "roadBuilding" | null;
+  setSelectedAction: (action: "road" | "settlement" | "city" | "roadBuilding" | null) => void;
+  roadBuildingEdges: number[];
+  setRoadBuildingEdges: (edges: number[]) => void;
+
+  // Knight / robber steal selection
+  pendingKnight: boolean;
+  setPendingKnight: (pending: boolean) => void;
+  pendingRobberHex: number | null;
+  setPendingRobberHex: (hex: number | null) => void;
+  pendingStealTargets: string[];
+  setPendingStealTargets: (targets: string[]) => void;
+  pendingRobberAction: "knight" | "robber" | null;
+  setPendingRobberAction: (action: "knight" | "robber" | null) => void;
+  clearRobberState: () => void;
 
   // Error
   error: string | null;
@@ -73,7 +86,15 @@ export const useGameStore = create<GameStore>((set) => ({
   setRoom: (room) => set({ room }),
 
   gameState: null,
-  setGameState: (gameState) => set({ gameState }),
+  setGameState: (gameState) =>
+    set((prev) => {
+      const turnChanged =
+        prev.gameState &&
+        prev.gameState.currentPlayerIndex !== gameState.currentPlayerIndex;
+      return turnChanged
+        ? { gameState, selectedAction: null, roadBuildingEdges: [], pendingKnight: false, pendingRobberHex: null, pendingStealTargets: [], pendingRobberAction: null }
+        : { gameState };
+    }),
 
   chatMessages: [],
   addChatMessage: (msg) =>
@@ -83,6 +104,23 @@ export const useGameStore = create<GameStore>((set) => ({
 
   selectedAction: null,
   setSelectedAction: (selectedAction) => set({ selectedAction }),
+  roadBuildingEdges: [],
+  setRoadBuildingEdges: (roadBuildingEdges) => set({ roadBuildingEdges }),
+
+  pendingKnight: false,
+  setPendingKnight: (pendingKnight) => set({ pendingKnight }),
+  pendingRobberHex: null,
+  setPendingRobberHex: (pendingRobberHex) => set({ pendingRobberHex }),
+  pendingStealTargets: [],
+  setPendingStealTargets: (pendingStealTargets) => set({ pendingStealTargets }),
+  pendingRobberAction: null,
+  setPendingRobberAction: (pendingRobberAction) => set({ pendingRobberAction }),
+  clearRobberState: () => set({
+    pendingKnight: false,
+    pendingRobberHex: null,
+    pendingStealTargets: [],
+    pendingRobberAction: null,
+  }),
 
   error: null,
   setError: (error) => set({ error }),
@@ -98,6 +136,11 @@ export const useGameStore = create<GameStore>((set) => ({
       gameState: null,
       chatMessages: [],
       selectedAction: null,
+      roadBuildingEdges: [],
+      pendingKnight: false,
+      pendingRobberHex: null,
+      pendingStealTargets: [],
+      pendingRobberAction: null,
       error: null,
       playerId: null,
       reconnecting: false,

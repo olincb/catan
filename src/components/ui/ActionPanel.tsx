@@ -16,7 +16,7 @@ interface ActionPanelProps {
 }
 
 export default function ActionPanel({ gameState }: ActionPanelProps) {
-  const { playerId, selectedAction, setSelectedAction } = useGameStore();
+  const { playerId, selectedAction, setSelectedAction, roadBuildingEdges, setRoadBuildingEdges, pendingKnight, pendingRobberHex, pendingStealTargets, pendingRobberAction } = useGameStore();
   const { sendAction } = useSocket();
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -62,22 +62,59 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
   const canAffordSettlement = hasResources(myPlayer.resources, BUILDING_COSTS.settlement);
   const canAffordCity = hasResources(myPlayer.resources, BUILDING_COSTS.city);
   const canAffordDevCard = hasResources(myPlayer.resources, BUILDING_COSTS.developmentCard);
+  const canPlayDevCards = (canBuild || canRoll) && myPlayer.developmentCards.length > 0 && !myPlayer.hasPlayedDevCardThisTurn;
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
-      {/* Dice */}
-      {gameState.diceRoll && (
-        <div className="text-center">
-          <span className="text-3xl">🎲</span>
-          <span className="text-2xl font-bold text-white ml-2">
-            {gameState.diceRoll[0]} + {gameState.diceRoll[1]} = {gameState.diceRoll[0] + gameState.diceRoll[1]}
-          </span>
+      {mustRob && pendingRobberHex === null && (
+        <div className="bg-red-900/50 border border-red-500 rounded p-2 text-center">
+          <p className="text-red-300 text-sm font-bold">🦹 Move the robber! Click a hex on the board.</p>
         </div>
       )}
 
-      {mustRob && (
+      {pendingKnight && (
         <div className="bg-red-900/50 border border-red-500 rounded p-2 text-center">
-          <p className="text-red-300 text-sm font-bold">🦹 Move the robber! Click a hex on the board.</p>
+          <p className="text-red-300 text-sm font-bold">🗡️ Select a hex to place the robber</p>
+          <button
+            className="mt-1 bg-gray-600 hover:bg-gray-500 text-white py-1 px-2 rounded text-xs"
+            onClick={() => useGameStore.getState().clearRobberState()}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {pendingRobberHex !== null && pendingStealTargets.length > 1 && (
+        <div className="bg-red-900/50 border border-red-500 rounded p-2">
+          <p className="text-red-300 text-sm font-bold mb-1">🦹 Choose a player to steal from:</p>
+          <div className="flex flex-wrap gap-1">
+            {pendingStealTargets.map(targetId => {
+              const target = gameState.players.find(p => p.id === targetId);
+              return (
+                <button
+                  key={targetId}
+                  className="py-1 px-2 rounded text-xs font-medium text-white transition-colors"
+                  style={{ backgroundColor: target?.color ?? "#666" }}
+                  onClick={() => {
+                    if (pendingRobberAction === "knight") {
+                      sendAction({ type: "PLAY_KNIGHT", hexId: pendingRobberHex, stealFromPlayerId: targetId });
+                    } else {
+                      sendAction({ type: "MOVE_ROBBER", hexId: pendingRobberHex, stealFromPlayerId: targetId });
+                    }
+                    useGameStore.getState().clearRobberState();
+                  }}
+                >
+                  {target?.name ?? targetId}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            className="mt-1 bg-gray-600 hover:bg-gray-500 text-white py-1 px-2 rounded text-xs"
+            onClick={() => useGameStore.getState().clearRobberState()}
+          >
+            Cancel
+          </button>
         </div>
       )}
 
@@ -157,7 +194,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
         )}
 
         {/* Dev card play buttons */}
-        {canBuild && myPlayer.developmentCards.length > 0 && !myPlayer.hasPlayedDevCardThisTurn && (
+        {canPlayDevCards && (
           <div className="w-full border-t border-gray-700 pt-2 mt-1">
             <p className="text-xs text-gray-400 mb-1">Play a dev card:</p>
             <div className="flex flex-wrap gap-1">
@@ -165,8 +202,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                 <button
                   className="bg-red-800 hover:bg-red-700 text-white py-1 px-2 rounded text-xs"
                   onClick={() => {
-                    // Knight needs hex selection — set a mode
-                    sendAction({ type: "PLAY_KNIGHT", hexId: -1 }); // TODO: proper hex selection
+                    useGameStore.getState().setPendingKnight(true);
                   }}
                 >
                   🗡️ Knight
@@ -200,7 +236,8 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                 <button
                   className="bg-green-800 hover:bg-green-700 text-white py-1 px-2 rounded text-xs"
                   onClick={() => {
-                    sendAction({ type: "PLAY_ROAD_BUILDING", edgeId1: -1 }); // TODO: proper edge selection
+                    setSelectedAction("roadBuilding");
+                    setRoadBuildingEdges([]);
                   }}
                 >
                   🛤️ Road Building
@@ -210,11 +247,29 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
           </div>
         )}
 
+        {/* Road Building mode indicator */}
+        {selectedAction === "roadBuilding" && (
+          <div className="w-full bg-green-900/50 border border-green-500 rounded p-2 text-center">
+            <p className="text-green-300 text-sm">
+              Road Building: Place road {roadBuildingEdges.length + 1} of 2
+            </p>
+            <button
+              className="text-xs text-gray-400 hover:text-white mt-1"
+              onClick={() => { setSelectedAction(null); setRoadBuildingEdges([]); }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {/* End turn */}
         {canEndTurn && (
           <button
             className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition-colors ml-auto"
-            onClick={() => sendAction({ type: "END_TURN" })}
+            onClick={() => {
+              useGameStore.getState().clearRobberState();
+              sendAction({ type: "END_TURN" });
+            }}
           >
             End Turn ⏭️
           </button>

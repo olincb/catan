@@ -63,7 +63,7 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                   📜{player.developmentCards.length}
                 </span>
                 <span className="text-yellow-400 font-bold">
-                  {player.victoryPoints}VP
+                  {isMe ? player.victoryPoints + (player.hiddenVictoryPoints || 0) : player.victoryPoints}VP
                 </span>
               </div>
             </div>

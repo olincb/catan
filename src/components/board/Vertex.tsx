@@ -31,17 +31,36 @@ export default function VertexComponent({
 
   if (building) {
     const color = building.playerId; // We'll map this to actual color in parent
+    const upgradeable = isValid && isSelectable;
     if (building.type === BuildingType.Settlement) {
       // House shape: rectangular base with triangular roof
       const s = size * 0.35;
       const points = `${cx - s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy + s*0.7} ${cx + s*0.7},${cy} ${cx},${cy - s*0.6} ${cx - s*0.7},${cy}`;
       return (
-        <polygon
-          points={points}
-          fill={color}
-          stroke="#333"
-          strokeWidth={1.5}
-        />
+        <g
+          onClick={upgradeable ? onClick : undefined}
+          className={upgradeable ? "cursor-pointer" : undefined}
+        >
+          {upgradeable && (
+            <circle
+              cx={cx}
+              cy={cy}
+              r={size * 0.35}
+              fill="none"
+              stroke="#2ecc71"
+              strokeWidth={2.5}
+              strokeDasharray="4,3"
+              className="animate-pulse"
+            />
+          )}
+          <polygon
+            points={points}
+            fill={color}
+            stroke={upgradeable ? "#2ecc71" : "#333"}
+            strokeWidth={upgradeable ? 2.5 : 1.5}
+            pointerEvents={upgradeable ? "all" : undefined}
+          />
+        </g>
       );
     }
     // Castle shape: wider base with a tower on top

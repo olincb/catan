@@ -6,7 +6,8 @@
 
 import React, { useState, useRef } from "react";
 import type { GameState, ResourceHand } from "../../engine/types";
-import { Resource } from "../../engine/types";
+import { Resource, TurnPhase } from "../../engine/types";
+import { getMaritimeTradeRate } from "../../engine/resources";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 
@@ -151,12 +152,23 @@ export default function TradeModal({ gameState }: TradeModalProps) {
     );
   }
 
+  const canTrade = gameState.turnPhase === TurnPhase.Trading || gameState.turnPhase === TurnPhase.Building;
+
   if (!isMyTurn || !myPlayer) return null;
 
-  // Check if any maritime trades are available
+  if (!canTrade) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-3">
+        <p className="text-gray-400 text-sm text-center">🎲 Roll dice to begin trading</p>
+      </div>
+    );
+  }
+
+  // Check if any maritime trades are available (rate depends on harbors)
   const maritimeButtons: React.ReactNode[] = [];
   for (const give of Object.values(Resource)) {
-    if (myPlayer.resources[give] < 4) continue;
+    const rate = getMaritimeTradeRate(gameState, playerId!, give);
+    if (myPlayer.resources[give] < rate) continue;
     for (const receive of Object.values(Resource)) {
       if (give === receive) continue;
       maritimeButtons.push(
@@ -165,7 +177,7 @@ export default function TradeModal({ gameState }: TradeModalProps) {
           className="bg-blue-900 hover:bg-blue-800 text-white py-0.5 px-1.5 rounded text-xs"
           onClick={() => sendAction({ type: "MARITIME_TRADE", give, receive })}
         >
-          4{RESOURCE_EMOJI[give]} → 1{RESOURCE_EMOJI[receive]}
+          {rate}{RESOURCE_EMOJI[give]} → 1{RESOURCE_EMOJI[receive]}
         </button>
       );
     }
@@ -299,14 +311,14 @@ export default function TradeModal({ gameState }: TradeModalProps) {
       </button>
       {maritimeButtons.length > 0 && (
         <div>
-          <p className="text-xs text-gray-400 mb-1">Bank Trade (trade 4 of a resource for 1 of another):</p>
+          <p className="text-xs text-gray-400 mb-1">Bank Trade (rate depends on harbors):</p>
           <div className="flex flex-wrap gap-1">
             {maritimeButtons}
           </div>
         </div>
       )}
       {maritimeButtons.length === 0 && (
-        <p className="text-xs text-gray-500 italic">Bank trade available when you have 4+ of a resource</p>
+        <p className="text-xs text-gray-500 italic">Bank trade available when you have enough of a resource (2-4 depending on harbors)</p>
       )}
     </div>
   );

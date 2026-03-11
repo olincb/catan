@@ -434,13 +434,12 @@ function handleMoveRobber(
     return { success: true, state: newState };
   }
 
-  log(
-    newState,
-    result.stolenResource
-      ? `${playerName} moved the robber and stole a resource`
-      : `${playerName} moved the robber`,
-    playerId
-  );
+  if (result.stolenResource && stealFromPlayerId) {
+    const victimName = newState.players.find(p => p.id === stealFromPlayerId)?.name;
+    log(newState, `${playerName} stole ${RESOURCE_EMOJI[result.stolenResource as Resource]} from ${victimName}`, playerId);
+  } else {
+    log(newState, `${playerName} moved the robber`, playerId);
+  }
 
   newState = structuredClone(newState);
   newState.turnPhase = TurnPhase.Trading;
@@ -468,10 +467,16 @@ function handleBuildSettlement(
   }
 
   let newState = placeSettlement(state, playerId, vertexId, false);
+  const prevLongestRoadS = newState.longestRoadPlayerId;
   newState = updateSpecialCards(newState);
 
   const playerName = newState.players.find((p) => p.id === playerId)!.name;
   log(newState, `${playerName} built a settlement`, playerId);
+
+  if (newState.longestRoadPlayerId !== prevLongestRoadS && newState.longestRoadPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.longestRoadPlayerId);
+    log(newState, `🛤️ ${holder?.name} now has Longest Road!`);
+  }
 
   // Check for winner
   const winner = checkWinner(newState);
@@ -504,10 +509,16 @@ function handleBuildCity(
   }
 
   let newState = placeCity(state, playerId, vertexId);
+  const prevLongestRoadC = newState.longestRoadPlayerId;
   newState = updateSpecialCards(newState);
 
   const playerName = newState.players.find((p) => p.id === playerId)!.name;
   log(newState, `${playerName} built a city`, playerId);
+
+  if (newState.longestRoadPlayerId !== prevLongestRoadC && newState.longestRoadPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.longestRoadPlayerId);
+    log(newState, `🛤️ ${holder?.name} now has Longest Road!`);
+  }
 
   const winner = checkWinner(newState);
   if (winner) {
@@ -539,10 +550,16 @@ function handleBuildRoad(
   }
 
   let newState = placeRoad(state, playerId, edgeId, false);
+  const prevLongestRoadR = newState.longestRoadPlayerId;
   newState = updateSpecialCards(newState);
 
   const playerName = newState.players.find((p) => p.id === playerId)!.name;
   log(newState, `${playerName} built a road`, playerId);
+
+  if (newState.longestRoadPlayerId !== prevLongestRoadR && newState.longestRoadPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.longestRoadPlayerId);
+    log(newState, `🛤️ ${holder?.name} now has Longest Road!`);
+  }
 
   const winner = checkWinner(newState);
   if (winner) {
@@ -596,10 +613,27 @@ function handlePlayKnight(
     return { success: false, error: robResult.error, state };
   }
 
+  const prevLongestRoad = robResult.state.longestRoadPlayerId;
+  const prevLargestArmy = robResult.state.largestArmyPlayerId;
   newState = updateSpecialCards(robResult.state);
 
   const playerName = newState.players.find((p) => p.id === playerId)!.name;
-  log(newState, `${playerName} played a Knight`, playerId);
+
+  if (robResult.stolenResource && stealFromPlayerId) {
+    const victimName = newState.players.find(p => p.id === stealFromPlayerId)?.name;
+    log(newState, `${playerName} played a Knight and stole ${RESOURCE_EMOJI[robResult.stolenResource as Resource]} from ${victimName}`, playerId);
+  } else {
+    log(newState, `${playerName} played a Knight`, playerId);
+  }
+
+  if (newState.longestRoadPlayerId !== prevLongestRoad && newState.longestRoadPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.longestRoadPlayerId);
+    log(newState, `🛤️ ${holder?.name} now has Longest Road!`);
+  }
+  if (newState.largestArmyPlayerId !== prevLargestArmy && newState.largestArmyPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.largestArmyPlayerId);
+    log(newState, `🗡️ ${holder?.name} now has Largest Army!`);
+  }
 
   const winner = checkWinner(newState);
   if (winner) {
@@ -643,10 +677,16 @@ function handlePlayRoadBuilding(
     }
   }
 
+  const prevLongestRoadRB = newState.longestRoadPlayerId;
   newState = updateSpecialCards(newState);
 
   const playerName = newState.players.find((p) => p.id === playerId)!.name;
   log(newState, `${playerName} played Road Building`, playerId);
+
+  if (newState.longestRoadPlayerId !== prevLongestRoadRB && newState.longestRoadPlayerId) {
+    const holder = newState.players.find(p => p.id === newState.longestRoadPlayerId);
+    log(newState, `🛤️ ${holder?.name} now has Longest Road!`);
+  }
 
   return { success: true, state: newState };
 }

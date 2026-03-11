@@ -26,7 +26,7 @@ function hexToPixel(q: number, r: number, size: number): { x: number; y: number 
 }
 
 export default function HexGrid({ gameState }: HexGridProps) {
-  const { playerId, selectedAction } = useGameStore();
+  const { playerId, selectedAction, pendingKnight } = useGameStore();
   const { sendAction } = useSocket();
 
   const HEX_SIZE = 50;
@@ -114,10 +114,27 @@ export default function HexGrid({ gameState }: HexGridProps) {
 
   const handleEdgeClick = (edgeId: number) => {
     if (!isMyTurn) return;
+    const store = useGameStore.getState();
 
     if (isSetup) {
       sendAction({ type: "SETUP_PLACE_ROAD", edgeId });
-    } else if (selectedAction === "road") {
+    } else if (store.selectedAction === "roadBuilding") {
+      const edges = [...store.roadBuildingEdges, edgeId];
+      const myPlayer = gameState.players.find((p) => p.id === playerId);
+      const onlyOneRoadLeft = myPlayer ? myPlayer.roadsRemaining <= 1 : false;
+
+      if (edges.length >= 2 || (edges.length === 1 && onlyOneRoadLeft)) {
+        sendAction({
+          type: "PLAY_ROAD_BUILDING",
+          edgeId1: edges[0],
+          ...(edges[1] !== undefined ? { edgeId2: edges[1] } : {}),
+        });
+        store.setSelectedAction(null);
+        store.setRoadBuildingEdges([]);
+      } else {
+        store.setRoadBuildingEdges(edges);
+      }
+    } else if (store.selectedAction === "road") {
       sendAction({ type: "BUILD_ROAD", edgeId });
     }
   };
@@ -125,8 +142,40 @@ export default function HexGrid({ gameState }: HexGridProps) {
   const handleHexClick = (hexId: number) => {
     if (!isMyTurn) return;
 
-    if (gameState.turnPhase === TurnPhase.Robbing) {
-      sendAction({ type: "MOVE_ROBBER", hexId });
+    const store = useGameStore.getState();
+    const isRobbing = gameState.turnPhase === TurnPhase.Robbing;
+    const isKnight = store.pendingKnight;
+
+    if (!isRobbing && !isKnight) return;
+    if (hexId === gameState.board.robberHexId) return;
+
+    // Compute steal targets for the chosen hex
+    const targets = new Set<string>();
+    for (const vertex of gameState.board.vertices) {
+      if (!vertex.hexIds.includes(hexId)) continue;
+      if (!vertex.building) continue;
+      if (vertex.building.playerId === playerId) continue;
+      const player = gameState.players.find(p => p.id === vertex.building!.playerId);
+      if (player && Object.values(player.resources).some(n => n > 0)) {
+        targets.add(vertex.building.playerId);
+      }
+    }
+    const stealTargets = Array.from(targets);
+
+    if (stealTargets.length <= 1) {
+      const stealFromPlayerId = stealTargets.length === 1 ? stealTargets[0] : undefined;
+      if (isKnight) {
+        sendAction({ type: "PLAY_KNIGHT", hexId, stealFromPlayerId });
+        store.clearRobberState();
+      } else {
+        sendAction({ type: "MOVE_ROBBER", hexId, stealFromPlayerId });
+      }
+    } else {
+      // Multiple targets — show steal picker in ActionPanel
+      store.setPendingRobberHex(hexId);
+      store.setPendingStealTargets(stealTargets);
+      store.setPendingRobberAction(isKnight ? "knight" : "robber");
+      if (isKnight) store.setPendingKnight(false);
     }
   };
 
@@ -161,7 +210,7 @@ export default function HexGrid({ gameState }: HexGridProps) {
         const p2 = layout.vertexPixels.get(edge.vertexIds[1]);
         if (!p1 || !p2) return null;
 
-        const isValidRoad = isMyTurn && (selectedAction === "road" || isSetup);
+        const isValidRoad = isMyTurn && (selectedAction === "road" || selectedAction === "roadBuilding" || isSetup);
         const roadColor = edge.road ? playerColorMap.get(edge.road.playerId) : undefined;
 
         return (

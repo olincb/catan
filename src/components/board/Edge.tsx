@@ -38,7 +38,7 @@ export default function EdgeComponent({
         x2={x2}
         y2={y2}
         stroke={color || "#333"}
-        strokeWidth={5}
+        strokeWidth={8}
         strokeLinecap="round"
       />
     );
@@ -52,7 +52,7 @@ export default function EdgeComponent({
         x2={x2}
         y2={y2}
         stroke="rgba(46, 204, 113, 0.5)"
-        strokeWidth={5}
+        strokeWidth={8}
         strokeLinecap="round"
         strokeDasharray="6,4"
         className="cursor-pointer hover:stroke-green-400 transition-colors"

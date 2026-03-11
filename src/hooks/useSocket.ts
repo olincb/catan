@@ -110,10 +110,12 @@ function initSocketListeners(socket: Socket): void {
   // Game events
   socket.on("game_started", ({ state }) => {
     store().setGameState(state);
+    store().setSelectedAction(null);
   });
 
   socket.on("game_state_updated", ({ state }) => {
     store().setGameState(state);
+    store().setSelectedAction(null);
   });
 
   // Reconnection response

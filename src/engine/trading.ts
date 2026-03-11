@@ -40,6 +40,13 @@ export function proposeTrade(
     return { state, error: "Trade must include resources on both sides" };
   }
 
+  // Can't offer and request the same resource
+  for (const resource of Object.values(Resource)) {
+    if ((offering[resource] ?? 0) > 0 && (requesting[resource] ?? 0) > 0) {
+      return { state, error: "Cannot offer and request the same resource" };
+    }
+  }
+
   // Validate target player exists
   if (targetPlayerId) {
     const target = state.players.find((p) => p.id === targetPlayerId);
