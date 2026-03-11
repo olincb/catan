@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 import { PLAYER_COLORS } from "../../engine/types";
@@ -31,18 +31,16 @@ function CopyButton({ text, title, label }: { text: string; title?: string; labe
 export default function Lobby() {
   const { room, playerId, playerName, setPlayerName, error } = useGameStore();
   const { createRoom, joinRoom, leaveRoom, setReady, startGame } = useSocket();
-  const [roomCode, setRoomCode] = useState("");
-  const [maxPlayers, setMaxPlayers] = useState(4);
-
-  // Pre-fill room code from invite link (?join=CODE)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const joinCode = params.get("join");
+  const [roomCode, setRoomCode] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const joinCode = new URLSearchParams(window.location.search).get("join");
     if (joinCode) {
-      setRoomCode(joinCode.toUpperCase());
       history.replaceState(null, "", window.location.pathname);
+      return joinCode.toUpperCase();
     }
-  }, []);
+    return "";
+  });
+  const [maxPlayers, setMaxPlayers] = useState(4);
 
   // Not in a room — show create/join
   if (!room) {

@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches-ignore: [main, 'preview/**', 'feature/**', 'dev/**']
-  pull_request:
 
 jobs:
   test:
