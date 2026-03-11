@@ -1,6 +1,6 @@
 # Catan Online — Deployment Guide
 
-## Quick Start (Local)
+## Local Development
 
 ```bash
 npm install
@@ -8,7 +8,7 @@ npm run dev
 # Open http://localhost:3000
 ```
 
-## Docker
+## Docker (Local)
 
 ```bash
 # Build
@@ -21,75 +21,156 @@ docker run -p 3000:3000 catan-online
 docker run -p 8080:3000 -e PORT=3000 catan-online
 ```
 
-## EC2 Deployment
-
-### 1. Launch Instance
-- **AMI:** Amazon Linux 2023 or Ubuntu 22.04
-- **Instance type:** t3.small (sufficient for ~50 concurrent games)
-- **Security group:** Allow inbound TCP 3000 (or 80/443 with reverse proxy)
-
-### 2. Install Docker
-```bash
-# Amazon Linux
-sudo yum install -y docker
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker ec2-user
-
-# Ubuntu
-sudo apt update && sudo apt install -y docker.io
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker ubuntu
-```
-
-### 3. Deploy
-```bash
-# Copy your code to EC2 (or git clone)
-scp -r . ec2-user@<EC2_IP>:~/catan
-
-# SSH in and build
-ssh ec2-user@<EC2_IP>
-cd ~/catan
-docker build -t catan-online .
-docker run -d --restart unless-stopped -p 3000:3000 --name catan catan-online
-```
-
-### 4. (Optional) Nginx Reverse Proxy
-```bash
-sudo apt install -y nginx
-
-# /etc/nginx/sites-available/catan
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-The `Upgrade` and `Connection` headers are critical for Socket.IO WebSocket connections.
-
-### 5. (Optional) SSL with Certbot
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
-```
-
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `HOST` | `0.0.0.0` (prod) / `localhost` (dev) | Bind address |
 | `NODE_ENV` | `development` | Set to `production` for optimized builds |
+
+## Fly.io Deployment
+
+### Architecture
+
+```
+GitHub Actions → fly deploy → Fly.io (Docker) → catan.olincb.me
+catan.olincb.me → Route 53 CNAME → <app>.fly.dev → Fly.io Proxy (SSL) → Docker :3000
+```
+
+Estimated cost: $0–2/month (free tier covers 1 shared-cpu-1x 256MB VM).
+
+### Prerequisites
+
+1. [Fly.io account](https://fly.io/app/sign-up) with credit card on file
+2. [Fly CLI](https://fly.io/docs/flyctl/install/) installed and authenticated (`fly auth login`)
+
+### Launch
+
+```bash
+fly launch
+```
+
+The wizard detects the Dockerfile and generates `fly.toml`. Edit it:
+
+```toml
+app = 'catan-online'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false    # Don't stop VM — kills WebSocket connections + game state
+  auto_start_machines = true
+  min_machines_running = 1      # Always keep 1 VM running
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+```
+
+Key settings:
+- `auto_stop_machines = false` — Fly normally stops idle VMs, which would kill active games
+- `force_https = true` — Redirects HTTP → HTTPS; Socket.IO uses `wss://` automatically
+
+### Deploy
+
+```bash
+fly deploy
+fly status        # Check VM status
+fly logs          # Stream logs
+fly open          # Open in browser
+```
+
+### Custom Domain (`catan.olincb.me`)
+
+```bash
+# Register with Fly.io
+fly certs add catan.olincb.me
+```
+
+Add a CNAME record in Route 53 (hosted zone for `olincb.me`):
+
+| Record name | Type | Value | TTL |
+|-------------|------|-------|-----|
+| `catan` | CNAME | `catan-online.fly.dev` | 300 |
+
+Verify:
+```bash
+fly certs check catan.olincb.me
+curl -I https://catan.olincb.me
+```
+
+### GitHub Actions CI/CD
+
+1. Create a deploy token:
+   ```bash
+   fly tokens create deploy -x 999999h
+   ```
+
+2. Add to GitHub: Repo → Settings → Secrets → `FLY_API_TOKEN`
+
+3. Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    concurrency: deploy-group
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+```
+
+### Useful Commands
+
+```bash
+fly status                    # App and VM status
+fly logs                      # Stream live logs
+fly ssh console               # SSH into the running VM
+fly scale memory 512          # Increase RAM
+fly releases                  # List deployments
+fly releases rollback         # Rollback to previous release
+fly restart                   # Restart the app
+```
+
+### What Fly.io Handles
+
+- **SSL certificates** — auto-provisioned via Let's Encrypt
+- **WebSocket upgrade** — native support, no Nginx needed
+- **Health checks** — uses Dockerfile HEALTHCHECK; auto-restarts on failure
+- **Zero-downtime deploys** — new VM starts, health check passes, traffic shifts
 
 ## Health Check
 

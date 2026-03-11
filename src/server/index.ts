@@ -8,7 +8,7 @@ import { Server } from "socket.io";
 import { setupSocketHandlers } from "./socketHandlers";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "localhost";
+const hostname = dev ? "localhost" : (process.env.HOST || "0.0.0.0");
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
