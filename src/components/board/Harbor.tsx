@@ -10,7 +10,7 @@ import { HarborType } from "../../engine/types";
 const HARBOR_LABELS: Record<HarborType, { label: string; emoji: string }> = {
   [HarborType.Generic]: { label: "3:1", emoji: "⚓" },
   [HarborType.BrickHarbor]: { label: "2:1", emoji: "🧱" },
-  [HarborType.LumberHarbor]: { label: "2:1", emoji: "🪵" },
+  [HarborType.LumberHarbor]: { label: "2:1", emoji: "🌲" },
   [HarborType.WoolHarbor]: { label: "2:1", emoji: "🐑" },
   [HarborType.GrainHarbor]: { label: "2:1", emoji: "🌾" },
   [HarborType.OreHarbor]: { label: "2:1", emoji: "⛰️" },

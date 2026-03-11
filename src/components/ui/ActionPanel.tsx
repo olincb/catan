@@ -181,7 +181,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
         {/* Build buttons */}
         {canBuild && (
           <>
-            <Tooltip content={!canAffordRoad ? "Need: 1🧱 1🪵" : "Road: 1🧱 1🪵"}>
+            <Tooltip content={!canAffordRoad ? "Need: 1🧱 1🌲" : "Road: 1🧱 1🌲"}>
               <button
                 className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                   !canAffordRoad
@@ -196,7 +196,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                 🛤️ Road
               </button>
             </Tooltip>
-            <Tooltip content={!canAffordSettlement ? "Need: 1🧱 1🪵 1🐑 1🌾" : "Settlement: 1🧱 1🪵 1🐑 1🌾"}>
+            <Tooltip content={!canAffordSettlement ? "Need: 1🧱 1🌲 1🐑 1🌾" : "Settlement: 1🧱 1🌲 1🐑 1🌾"}>
               <button
                 className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                   !canAffordSettlement
