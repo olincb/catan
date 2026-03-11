@@ -1,12 +1,12 @@
-name: Test & Deploy
+name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'preview/**', 'feature/**', 'dev/**']
 
 jobs:
   test:
-    name: Test
+    name: Lint & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +22,28 @@ jobs:
     name: Deploy
     needs: test
     runs-on: ubuntu-latest
-    concurrency: deploy-group
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+
+      - name: Determine app name
+        id: app
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "name=olincb-catan" >> $GITHUB_OUTPUT
+          else
+            BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-38)
+            echo "name=olincb-catan-${BRANCH}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only --app ${{ steps.app.outputs.name }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Print preview URL
+        if: github.ref != 'refs/heads/main'
+        run: echo "Preview URL -> https://${{ steps.app.outputs.name }}.fly.dev"
