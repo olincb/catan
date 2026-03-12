@@ -6,7 +6,7 @@
 
 import React, { useState, useMemo } from "react";
 import type { PlayerState, GameState } from "../../engine/types";
-import { Resource, BUILDING_COSTS, BuildingType, RESOURCE_EMOJI, DEV_CARD_NAMES, DEV_CARD_ICONS } from "../../engine/types";
+import { Resource, DevelopmentCardType, BUILDING_COSTS, BuildingType, RESOURCE_EMOJI, DEV_CARD_NAMES, DEV_CARD_ICONS } from "../../engine/types";
 import Tooltip from "./Tooltip";
 
 const RESOURCE_COLORS: Record<Resource, string> = {
@@ -106,7 +106,9 @@ export default function PlayerHud({ player, isCurrentPlayer, gameState }: Player
               <span
                 key={`new-${i}`}
                 className="text-xs bg-purple-900/50 text-purple-300 px-1.5 py-0.5 rounded border border-purple-600"
-                title="Drawn this turn — playable next turn"
+                title={card === DevelopmentCardType.VictoryPoint
+                  ? "VP cards count immediately — revealed at game end"
+                  : "Drawn this turn — playable next turn"}
               >
                 {DEV_CARD_ICONS[card]} {DEV_CARD_NAMES[card]} <span className="text-purple-400 text-[10px]">(new)</span>
               </span>

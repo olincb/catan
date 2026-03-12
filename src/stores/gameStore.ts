@@ -97,7 +97,9 @@ export const useGameStore = create<GameStore>((set) => ({
         prev.gameState &&
         prev.gameState.currentPlayerIndex !== gameState.currentPlayerIndex;
 
-      // Detect a newly drawn dev card for this player
+      // Detect a newly drawn dev card for this player by comparing newDevCards
+      // array length across state updates. Safe because newDevCards is sanitized
+      // to [] for opponents, so this only fires for the local player's purchases.
       let drawnDevCard = prev.drawnDevCard;
       if (prev.gameState && prev.playerId) {
         const prevPlayer = prev.gameState.players.find((p) => p.id === prev.playerId);
