@@ -111,7 +111,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
   const canAffordSettlement = hasResources(myPlayer.resources, BUILDING_COSTS.settlement);
   const canAffordCity = hasResources(myPlayer.resources, BUILDING_COSTS.city);
   const canAffordDevCard = hasResources(myPlayer.resources, BUILDING_COSTS.developmentCard);
-  const canPlayDevCards = (canBuild || canRoll) && myPlayer.developmentCards.length > 0 && !myPlayer.hasPlayedDevCardThisTurn;
+  const canPlayDevCards = (canBuild || canRoll) && myPlayer.developmentCards.some(c => c !== DevelopmentCardType.VictoryPoint) && !myPlayer.hasPlayedDevCardThisTurn;
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
