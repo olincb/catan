@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback } from "react";
 import type { GameState } from "../../engine/types";
-import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources } from "../../engine/types";
+import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources, DEV_CARD_NAMES, DEV_CARD_ICONS } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 import Tooltip from "./Tooltip";
@@ -314,8 +314,8 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                   return acc;
                 }, {})
               ).map(([card, count]) => {
-                const emoji = { knight: "🗡️", roadBuilding: "🛤️", yearOfPlenty: "🎁", monopoly: "💰", victoryPoint: "⭐" }[card] ?? "🃏";
-                const name = { knight: "Knight", roadBuilding: "Road Building", yearOfPlenty: "Year of Plenty", monopoly: "Monopoly", victoryPoint: "Victory Point" }[card] ?? card;
+                const emoji = DEV_CARD_ICONS[card as DevelopmentCardType] ?? "🃏";
+                const name = DEV_CARD_NAMES[card as DevelopmentCardType] ?? card;
                 return (
                   <button
                     key={card}

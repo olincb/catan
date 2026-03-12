@@ -5,15 +5,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Resource } from "../../engine/types";
-
-const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Lumber]: "🌲",
-  [Resource.Brick]: "🧱",
-  [Resource.Wool]: "🐑",
-  [Resource.Grain]: "🌾",
-  [Resource.Ore]: "⛰️",
-};
+import { Resource, RESOURCE_EMOJI } from "../../engine/types";
 
 const RESOURCE_LABELS: Record<Resource, string> = {
   [Resource.Lumber]: "Lumber",

@@ -39,6 +39,7 @@ export default function Lobby() {
     const params = new URLSearchParams(window.location.search);
     const joinCode = params.get("join");
     if (joinCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time URL param read
       setRoomCode(joinCode.toUpperCase());
       history.replaceState(null, "", window.location.pathname);
     }

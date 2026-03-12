@@ -13,31 +13,7 @@ import GameLog from "@/components/ui/GameLog";
 import Scoreboard from "@/components/ui/Scoreboard";
 import DiscardDialog from "@/components/ui/DiscardDialog";
 import DiceDisplay from "@/components/ui/DiceDisplay";
-import { GamePhase, TurnPhase, DevelopmentCardType } from "@/engine/types";
-
-const DEV_CARD_NAMES: Record<DevelopmentCardType, string> = {
-  [DevelopmentCardType.Knight]: "Knight",
-  [DevelopmentCardType.RoadBuilding]: "Road Building",
-  [DevelopmentCardType.YearOfPlenty]: "Year of Plenty",
-  [DevelopmentCardType.Monopoly]: "Monopoly",
-  [DevelopmentCardType.VictoryPoint]: "Victory Point",
-};
-
-const DEV_CARD_ICONS: Record<DevelopmentCardType, string> = {
-  [DevelopmentCardType.Knight]: "🗡️",
-  [DevelopmentCardType.RoadBuilding]: "🛤️",
-  [DevelopmentCardType.YearOfPlenty]: "🎁",
-  [DevelopmentCardType.Monopoly]: "💰",
-  [DevelopmentCardType.VictoryPoint]: "⭐",
-};
-
-const DEV_CARD_DESC: Record<DevelopmentCardType, string> = {
-  [DevelopmentCardType.Knight]: "Move the robber and steal a resource from an adjacent player.",
-  [DevelopmentCardType.RoadBuilding]: "Place 2 roads for free.",
-  [DevelopmentCardType.YearOfPlenty]: "Take any 2 resources from the bank.",
-  [DevelopmentCardType.Monopoly]: "Take all of one resource type from every player.",
-  [DevelopmentCardType.VictoryPoint]: "+1 Victory Point applied immediately!",
-};
+import { GamePhase, TurnPhase, DevelopmentCardType, DEV_CARD_NAMES, DEV_CARD_ICONS, DEV_CARD_DESC } from "@/engine/types";
 
 function DevCardRevealModal({ card, onClose }: { card: DevelopmentCardType; onClose: () => void }) {
   const isVP = card === DevelopmentCardType.VictoryPoint;

@@ -16,6 +16,7 @@ import {
   BUILDING_COSTS,
   PIECE_LIMITS,
   PLAYER_COLORS,
+  RESOURCE_EMOJI,
   emptyResourceHand,
   hasResources,
 } from "./types";
@@ -104,14 +105,6 @@ export function createGame(
 function log(state: GameState, message: string, playerId?: string): void {
   state.log.push({ timestamp: Date.now(), message, playerId });
 }
-
-const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🌲",
-  [Resource.Wool]: "🐑",
-  [Resource.Grain]: "🌾",
-  [Resource.Ore]: "⛰️",
-};
 
 function formatResourceGains(gains: Partial<Record<Resource, number>>): string {
   return Object.entries(gains)
