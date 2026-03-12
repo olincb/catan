@@ -58,7 +58,7 @@ export default function PlayerHud({ player, isCurrentPlayer }: PlayerHudProps) {
           <span className="font-bold text-white text-sm">{player.name}</span>
         </div>
         <span className="text-yellow-400 font-bold text-sm">
-          {player.victoryPoints} VP
+          {player.victoryPoints + (player.hiddenVictoryPoints || 0)} VP
         </span>
       </div>
 
