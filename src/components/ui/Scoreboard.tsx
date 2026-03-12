@@ -71,7 +71,7 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                 </span>
                 <span className="text-yellow-400 font-bold">
                   {isMe && player.hiddenVictoryPoints > 0 ? (
-                    <Tooltip content={`You have ${player.hiddenVictoryPoints} hidden VP from dev cards (${player.victoryPoints + player.hiddenVictoryPoints} total)`}>
+                    <Tooltip align="right" content={`You have ${player.hiddenVictoryPoints} hidden VP from dev cards (${player.victoryPoints + player.hiddenVictoryPoints} total)`}>
                       <span className="cursor-help">{player.victoryPoints}VP</span>
                     </Tooltip>
                   ) : (

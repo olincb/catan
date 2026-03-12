@@ -76,7 +76,7 @@ export default function PlayerHud({ player, isCurrentPlayer, gameState }: Player
           />
           <span className="font-bold text-white text-sm">{player.name}</span>
         </div>
-        <Tooltip content={
+        <Tooltip align="right" content={
           <div className="space-y-0.5">
             {vpBreakdown.settlements > 0 && <div>🏠 Settlements: {vpBreakdown.settlements} × 1 = {vpBreakdown.settlements} VP</div>}
             {vpBreakdown.cities > 0 && <div>🏙️ Cities: {vpBreakdown.cities} × 2 = {vpBreakdown.cities * 2} VP</div>}
