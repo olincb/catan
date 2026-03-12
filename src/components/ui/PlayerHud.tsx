@@ -6,16 +6,8 @@
 
 import React, { useState, useMemo } from "react";
 import type { PlayerState, GameState } from "../../engine/types";
-import { Resource, DevelopmentCardType, BUILDING_COSTS, BuildingType } from "../../engine/types";
+import { Resource, DevelopmentCardType, BUILDING_COSTS, BuildingType, RESOURCE_EMOJI, DEV_CARD_NAMES, DEV_CARD_ICONS } from "../../engine/types";
 import Tooltip from "./Tooltip";
-
-const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🪵",
-  [Resource.Wool]: "🐑",
-  [Resource.Grain]: "🌾",
-  [Resource.Ore]: "⛰️",
-};
 
 const RESOURCE_COLORS: Record<Resource, string> = {
   [Resource.Brick]: "bg-red-700",
@@ -23,14 +15,6 @@ const RESOURCE_COLORS: Record<Resource, string> = {
   [Resource.Wool]: "bg-green-200",
   [Resource.Grain]: "bg-yellow-500",
   [Resource.Ore]: "bg-gray-500",
-};
-
-const DEV_CARD_NAMES: Record<DevelopmentCardType, string> = {
-  [DevelopmentCardType.Knight]: "🗡️ Knight",
-  [DevelopmentCardType.RoadBuilding]: "🛤️ Road Building",
-  [DevelopmentCardType.YearOfPlenty]: "🎁 Year of Plenty",
-  [DevelopmentCardType.Monopoly]: "💰 Monopoly",
-  [DevelopmentCardType.VictoryPoint]: "⭐ Victory Point",
 };
 
 const COST_DISPLAY_NAMES: Record<string, string> = {
@@ -106,7 +90,7 @@ export default function PlayerHud({ player, isCurrentPlayer, gameState }: Player
       </div>
 
       {/* Development Cards */}
-      {player.developmentCards.length > 0 && (
+      {(player.developmentCards.length > 0 || player.newDevCards.length > 0) && (
         <div className="mb-2">
           <div className="text-xs text-gray-400 mb-1">Development Cards:</div>
           <div className="flex flex-wrap gap-1">
@@ -115,7 +99,18 @@ export default function PlayerHud({ player, isCurrentPlayer, gameState }: Player
                 key={i}
                 className="text-xs bg-purple-900 text-white px-1.5 py-0.5 rounded"
               >
-                {DEV_CARD_NAMES[card]}
+                {DEV_CARD_ICONS[card]} {DEV_CARD_NAMES[card]}
+              </span>
+            ))}
+            {player.newDevCards.map((card, i) => (
+              <span
+                key={`new-${i}`}
+                className="text-xs bg-purple-900/50 text-purple-300 px-1.5 py-0.5 rounded border border-purple-600"
+                title={card === DevelopmentCardType.VictoryPoint
+                  ? "VP cards count immediately — revealed at game end"
+                  : "Drawn this turn — playable next turn"}
+              >
+                {DEV_CARD_ICONS[card]} {DEV_CARD_NAMES[card]} <span className="text-purple-400 text-[10px]">(new)</span>
               </span>
             ))}
           </div>

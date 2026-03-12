@@ -6,17 +6,9 @@
 
 import React, { useState } from "react";
 import type { GameState, ResourceHand } from "../../engine/types";
-import { Resource, totalResources } from "../../engine/types";
+import { Resource, totalResources, RESOURCE_EMOJI } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
-
-const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🪵",
-  [Resource.Wool]: "🐑",
-  [Resource.Grain]: "🌾",
-  [Resource.Ore]: "⛰️",
-};
 
 interface DiscardDialogProps {
   gameState: GameState;

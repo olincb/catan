@@ -6,18 +6,10 @@
 
 import React, { useState, useRef } from "react";
 import type { GameState, ResourceHand } from "../../engine/types";
-import { Resource, TurnPhase } from "../../engine/types";
+import { Resource, TurnPhase, RESOURCE_EMOJI } from "../../engine/types";
 import { getMaritimeTradeRate } from "../../engine/resources";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
-
-const RESOURCE_EMOJI: Record<Resource, string> = {
-  [Resource.Brick]: "🧱",
-  [Resource.Lumber]: "🪵",
-  [Resource.Wool]: "🐑",
-  [Resource.Grain]: "🌾",
-  [Resource.Ore]: "⛰️",
-};
 
 interface TradeModalProps {
   gameState: GameState;

@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback } from "react";
 import type { GameState } from "../../engine/types";
-import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources } from "../../engine/types";
+import { GamePhase, TurnPhase, DevelopmentCardType, Resource, BUILDING_COSTS, hasResources, DEV_CARD_NAMES, DEV_CARD_ICONS } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { useSocket } from "../../hooks/useSocket";
 import Tooltip from "./Tooltip";
@@ -111,7 +111,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
   const canAffordSettlement = hasResources(myPlayer.resources, BUILDING_COSTS.settlement);
   const canAffordCity = hasResources(myPlayer.resources, BUILDING_COSTS.city);
   const canAffordDevCard = hasResources(myPlayer.resources, BUILDING_COSTS.developmentCard);
-  const canPlayDevCards = (canBuild || canRoll) && myPlayer.developmentCards.length > 0 && !myPlayer.hasPlayedDevCardThisTurn;
+  const canPlayDevCards = (canBuild || canRoll) && myPlayer.developmentCards.some(c => c !== DevelopmentCardType.VictoryPoint) && !myPlayer.hasPlayedDevCardThisTurn;
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
@@ -181,7 +181,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
         {/* Build buttons */}
         {canBuild && (
           <>
-            <Tooltip content={!canAffordRoad ? "Need: 1🧱 1🪵" : "Road: 1🧱 1🪵"}>
+            <Tooltip content={!canAffordRoad ? "Need: 1🧱 1🌲" : "Road: 1🧱 1🌲"}>
               <button
                 className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                   !canAffordRoad
@@ -196,7 +196,7 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                 🛤️ Road
               </button>
             </Tooltip>
-            <Tooltip content={!canAffordSettlement ? "Need: 1🧱 1🪵 1🐑 1🌾" : "Settlement: 1🧱 1🪵 1🐑 1🌾"}>
+            <Tooltip content={!canAffordSettlement ? "Need: 1🧱 1🌲 1🐑 1🌾" : "Settlement: 1🧱 1🌲 1🐑 1🌾"}>
               <button
                 className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
                   !canAffordSettlement
@@ -314,8 +314,8 @@ export default function ActionPanel({ gameState }: ActionPanelProps) {
                   return acc;
                 }, {})
               ).map(([card, count]) => {
-                const emoji = { knight: "🗡️", roadBuilding: "🛤️", yearOfPlenty: "🎁", monopoly: "💰", victoryPoint: "⭐" }[card] ?? "🃏";
-                const name = { knight: "Knight", roadBuilding: "Road Building", yearOfPlenty: "Year of Plenty", monopoly: "Monopoly", victoryPoint: "Victory Point" }[card] ?? card;
+                const emoji = DEV_CARD_ICONS[card as DevelopmentCardType] ?? "🃏";
+                const name = DEV_CARD_NAMES[card as DevelopmentCardType] ?? card;
                 return (
                   <button
                     key={card}

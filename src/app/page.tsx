@@ -13,7 +13,38 @@ import GameLog from "@/components/ui/GameLog";
 import Scoreboard from "@/components/ui/Scoreboard";
 import DiscardDialog from "@/components/ui/DiscardDialog";
 import DiceDisplay from "@/components/ui/DiceDisplay";
-import { GamePhase, TurnPhase } from "@/engine/types";
+import { GamePhase, TurnPhase, DevelopmentCardType, DEV_CARD_NAMES, DEV_CARD_ICONS, DEV_CARD_DESC } from "@/engine/types";
+
+function DevCardRevealModal({ card, onClose }: { card: DevelopmentCardType; onClose: () => void }) {
+  const isVP = card === DevelopmentCardType.VictoryPoint;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-800 rounded-2xl p-8 shadow-2xl text-center max-w-xs mx-4 border border-purple-500 animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-5xl mb-3">{DEV_CARD_ICONS[card]}</div>
+        <div className="text-xs uppercase tracking-widest text-purple-400 mb-1">Development Card Drawn</div>
+        <h3 className="text-2xl font-bold text-white mb-3">{DEV_CARD_NAMES[card]}</h3>
+        <p className={`text-sm mb-5 ${isVP ? "text-green-400" : "text-gray-400"}`}>
+          {DEV_CARD_DESC[card]}
+        </p>
+        {!isVP && (
+          <p className="text-xs text-gray-500 mb-5">Not playable until your next turn.</p>
+        )}
+        <button
+          className="bg-purple-700 hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          onClick={onClose}
+        >
+          Got it!
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ErrorToast({ message }: { message: string }) {
   const { setError } = useGameStore();
@@ -57,7 +88,7 @@ export default function Home() {
   useSocket();
   const { play: playSound, muted, toggleMute } = useSoundManager();
 
-  const { gameState, playerId, error, reconnecting } = useGameStore();
+  const { gameState, playerId, error, reconnecting, drawnDevCard, clearDrawnDevCard } = useGameStore();
 
   // Track previous state for triggering sounds
   const prevTurnPhaseRef = useRef<TurnPhase | null>(null);
@@ -155,6 +186,9 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900 flex flex-col md:flex-row">
       {/* Toast error */}
       {error && <ErrorToast message={error} />}
+
+      {/* Dev card reveal modal */}
+      {drawnDevCard && <DevCardRevealModal card={drawnDevCard} onClose={clearDrawnDevCard} />}
 
       {/* Mute toggle */}
       <button

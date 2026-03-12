@@ -34,6 +34,38 @@ export enum DevelopmentCardType {
   VictoryPoint = "victoryPoint",
 }
 
+export const RESOURCE_EMOJI: Record<Resource, string> = {
+  [Resource.Brick]: "🧱",
+  [Resource.Lumber]: "🌲",
+  [Resource.Wool]: "🐑",
+  [Resource.Grain]: "🌾",
+  [Resource.Ore]: "⛰️",
+};
+
+export const DEV_CARD_NAMES: Record<DevelopmentCardType, string> = {
+  [DevelopmentCardType.Knight]: "Knight",
+  [DevelopmentCardType.RoadBuilding]: "Road Building",
+  [DevelopmentCardType.YearOfPlenty]: "Year of Plenty",
+  [DevelopmentCardType.Monopoly]: "Monopoly",
+  [DevelopmentCardType.VictoryPoint]: "Victory Point",
+};
+
+export const DEV_CARD_ICONS: Record<DevelopmentCardType, string> = {
+  [DevelopmentCardType.Knight]: "🗡️",
+  [DevelopmentCardType.RoadBuilding]: "🛤️",
+  [DevelopmentCardType.YearOfPlenty]: "🎁",
+  [DevelopmentCardType.Monopoly]: "💰",
+  [DevelopmentCardType.VictoryPoint]: "⭐",
+};
+
+export const DEV_CARD_DESC: Record<DevelopmentCardType, string> = {
+  [DevelopmentCardType.Knight]: "Move the robber and steal a resource from an adjacent player.",
+  [DevelopmentCardType.RoadBuilding]: "Place 2 roads for free.",
+  [DevelopmentCardType.YearOfPlenty]: "Take any 2 resources from the bank.",
+  [DevelopmentCardType.Monopoly]: "Take all of one resource type from every player.",
+  [DevelopmentCardType.VictoryPoint]: "+1 Victory Point applied immediately!",
+};
+
 export enum GamePhase {
   Lobby = "lobby",
   SetupForward = "setupForward",   // 1st round: player 1→N
