@@ -8,6 +8,7 @@ import React from "react";
 import type { GameState } from "../../engine/types";
 import { useGameStore } from "../../stores/gameStore";
 import { totalResources } from "../../engine/types";
+import Tooltip from "./Tooltip";
 
 interface ScoreboardProps {
   gameState: GameState;
@@ -69,7 +70,13 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                   📜{player.developmentCards.length}
                 </span>
                 <span className="text-yellow-400 font-bold">
-                  {isMe ? player.victoryPoints + (player.hiddenVictoryPoints || 0) : player.victoryPoints}VP
+                  {isMe && player.hiddenVictoryPoints > 0 ? (
+                    <Tooltip content={`You have ${player.hiddenVictoryPoints} hidden VP from dev cards (${player.victoryPoints + player.hiddenVictoryPoints} total)`}>
+                      <span className="cursor-help">{player.victoryPoints}VP</span>
+                    </Tooltip>
+                  ) : (
+                    <>{player.victoryPoints}VP</>
+                  )}
                 </span>
               </div>
             </div>

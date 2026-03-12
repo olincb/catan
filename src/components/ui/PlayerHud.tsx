@@ -4,9 +4,10 @@
 
 "use client";
 
-import React, { useState } from "react";
-import type { PlayerState } from "../../engine/types";
-import { Resource, DevelopmentCardType, BUILDING_COSTS } from "../../engine/types";
+import React, { useState, useMemo } from "react";
+import type { PlayerState, GameState } from "../../engine/types";
+import { Resource, DevelopmentCardType, BUILDING_COSTS, BuildingType } from "../../engine/types";
+import Tooltip from "./Tooltip";
 
 const RESOURCE_EMOJI: Record<Resource, string> = {
   [Resource.Brick]: "🧱",
@@ -42,10 +43,28 @@ const COST_DISPLAY_NAMES: Record<string, string> = {
 interface PlayerHudProps {
   player: PlayerState;
   isCurrentPlayer: boolean;
+  gameState: GameState;
 }
 
-export default function PlayerHud({ player, isCurrentPlayer }: PlayerHudProps) {
+export default function PlayerHud({ player, isCurrentPlayer, gameState }: PlayerHudProps) {
   const [showCosts, setShowCosts] = useState(false);
+
+  const vpBreakdown = useMemo(() => {
+    const settlements = gameState.board.vertices.filter(
+      (v) => v.building?.playerId === player.id && v.building?.type === BuildingType.Settlement
+    ).length;
+    const cities = gameState.board.vertices.filter(
+      (v) => v.building?.playerId === player.id && v.building?.type === BuildingType.City
+    ).length;
+    const longestRoad = gameState.longestRoadPlayerId === player.id ? 2 : 0;
+    const largestArmy = gameState.largestArmyPlayerId === player.id ? 2 : 0;
+    const hiddenVP = player.hiddenVictoryPoints || 0;
+
+    return { settlements, cities, longestRoad, largestArmy, hiddenVP };
+  }, [gameState, player]);
+
+  const totalVP = player.victoryPoints + (player.hiddenVictoryPoints || 0);
+  const hasHiddenVP = (player.hiddenVictoryPoints || 0) > 0;
 
   return (
     <div className={`rounded-lg p-3 ${isCurrentPlayer ? "bg-gray-800 border border-yellow-500" : "bg-gray-800/50"}`}>
@@ -57,9 +76,19 @@ export default function PlayerHud({ player, isCurrentPlayer }: PlayerHudProps) {
           />
           <span className="font-bold text-white text-sm">{player.name}</span>
         </div>
-        <span className="text-yellow-400 font-bold text-sm">
-          {player.victoryPoints + (player.hiddenVictoryPoints || 0)} VP
-        </span>
+        <Tooltip content={
+          <div className="space-y-0.5">
+            {vpBreakdown.settlements > 0 && <div>🏠 Settlements: {vpBreakdown.settlements} × 1 = {vpBreakdown.settlements} VP</div>}
+            {vpBreakdown.cities > 0 && <div>🏙️ Cities: {vpBreakdown.cities} × 2 = {vpBreakdown.cities * 2} VP</div>}
+            {vpBreakdown.longestRoad > 0 && <div>🛤️ Longest Road: 2 VP</div>}
+            {vpBreakdown.largestArmy > 0 && <div>⚔️ Largest Army: 2 VP</div>}
+            {vpBreakdown.hiddenVP > 0 && <div>⭐ VP Dev Cards: {vpBreakdown.hiddenVP} VP</div>}
+          </div>
+        }>
+          <span className="text-yellow-400 font-bold text-sm cursor-help">
+            {totalVP} VP{hasHiddenVP && <span className="text-yellow-600 text-xs"> ({player.victoryPoints} public)</span>}
+          </span>
+        </Tooltip>
       </div>
 
       {/* Resources */}

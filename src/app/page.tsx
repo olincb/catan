@@ -193,6 +193,7 @@ export default function Home() {
           <PlayerHud
             player={myPlayer}
             isCurrentPlayer={gameState.players[gameState.currentPlayerIndex]?.id === playerId}
+            gameState={gameState}
           />
         )}
         <TradeModal gameState={gameState} />
