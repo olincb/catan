@@ -27,7 +27,7 @@ function hexToPixel(q: number, r: number, size: number): { x: number; y: number 
 }
 
 export default function HexGrid({ gameState }: HexGridProps) {
-  const { playerId, selectedAction, pendingKnight } = useGameStore();
+  const { playerId, selectedAction } = useGameStore();
   const { sendAction } = useSocket();
 
   const HEX_SIZE = 50;

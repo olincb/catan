@@ -27,6 +27,7 @@ function ErrorToast({ message }: { message: string }) {
   useEffect(() => {
     const timer = setTimeout(dismiss, 3000);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

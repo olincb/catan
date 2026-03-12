@@ -3,7 +3,7 @@ import { generateBoard } from "../board";
 import { createGame, dispatchAction } from "../state";
 import { computeLongestRoad } from "../scoring";
 import { GamePhase, TurnPhase, Resource, BuildingType, totalResources } from "../types";
-import type { GameState, BoardState, Vertex, Edge } from "../types";
+import type { GameState, Vertex, Edge } from "../types";
 
 describe("Board Generation", () => {
   it("generates a standard 4-player board with 19 hexes", () => {
