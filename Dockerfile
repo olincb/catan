@@ -25,11 +25,8 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/next.config.mjs ./next.config.mjs
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
-
-# tsx is needed at runtime for the custom server
-RUN npm install tsx
 
 EXPOSE 3000
 
