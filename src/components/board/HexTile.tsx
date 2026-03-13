@@ -58,7 +58,7 @@ export default function HexTile({ hex, cx, cy, size }: HexTileProps) {
       {/* Terrain emoji */}
       <text
         x={cx}
-        y={cy - (hex.numberToken ? 8 : 0)}
+        y={cy - (hex.numberToken ? 16 : 0)}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={size * 0.4}
