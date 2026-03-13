@@ -80,7 +80,7 @@ export default function EdgeComponent({
           x2={x2}
           y2={y2}
           stroke="#000"
-          strokeWidth={12}
+          strokeWidth={7}
           strokeLinecap="round"
         />
         <line
@@ -89,7 +89,7 @@ export default function EdgeComponent({
           x2={x2}
           y2={y2}
           stroke={color || "#333"}
-          strokeWidth={8}
+          strokeWidth={4.5}
           strokeLinecap="round"
         />
       </g>
@@ -104,7 +104,7 @@ export default function EdgeComponent({
         x2={x2}
         y2={y2}
         stroke="rgba(46, 204, 113, 0.5)"
-        strokeWidth={8}
+        strokeWidth={5}
         strokeLinecap="round"
         strokeDasharray="6,4"
         className="cursor-pointer hover:stroke-green-400 transition-colors"
