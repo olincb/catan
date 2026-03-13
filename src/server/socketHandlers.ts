@@ -214,8 +214,16 @@ export function setupSocketHandlers(io: Server): void {
       if (state.phase === GamePhase.Finished) {
         console.log(`Game finished, clearing gameId for room=${roomCode}`);
         setGameId(room.code, null);
+        // Reset all players to unready for a new game
+        for (const p of room.players) {
+          p.ready = false;
+        }
         socket.join(room.code);
-        socket.emit("room_joined", { room: serializeRoom(room) });
+        socket.emit("room_joined", {
+          roomCode: room.code,
+          playerId,
+          room: serializeRoom(room),
+        });
         return;
       }
 
