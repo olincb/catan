@@ -40,7 +40,7 @@ interface GameStore {
 
   // Game
   gameState: GameState | null;
-  setGameState: (state: GameState) => void;
+  setGameState: (state: GameState | null) => void;
 
   // Chat
   chatMessages: ChatMessage[];
