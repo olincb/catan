@@ -56,8 +56,9 @@ export function buyDevCard(
   const card = newState.developmentCardDeck.pop()!;
 
   if (card === DevelopmentCardType.VictoryPoint) {
-    // VP cards count immediately — no "wait a turn" restriction
+    // VP cards count immediately and go straight to hand (no "wait a turn" restriction)
     p.hiddenVictoryPoints += 1;
+    p.developmentCards.push(card);
   } else {
     // Action cards can't be played until next turn
     p.newDevCards.push(card);

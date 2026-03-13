@@ -31,30 +31,37 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
           return (
             <div
               key={player.id}
-              className={`flex items-center justify-between p-2 rounded ${
+              className={`p-2 rounded ${
                 isCurrent ? "bg-gray-700 border-l-2 border-yellow-500" : "bg-gray-700/30"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: player.color }}
-                />
-                <span className={`text-sm ${isMe ? "font-bold text-white" : "text-gray-300"}`}>
-                  {player.name}
-                  {isMe && " (you)"}
-                </span>
-                {isCurrent && <span className="text-xs text-yellow-400">◀</span>}
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                {player.longestRoadLength > 0 && (
-                  <span
-                    className={`px-1 rounded ${hasLongestRoad ? "bg-blue-900 text-blue-300" : "text-gray-500"}`}
-                    title={`Road length: ${player.longestRoadLength}${hasLongestRoad ? " (Longest Road!)" : ""}`}
-                  >
-                    🛤️{player.longestRoadLength}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: player.color }}
+                  />
+                  <span className={`text-sm ${isMe ? "font-bold text-white" : "text-gray-300"}`}>
+                    {player.name}
+                    {isMe && " (you)"}
                   </span>
+                  {isCurrent && <span className="text-xs text-yellow-400">◀</span>}
+                </div>
+                {isMe && player.hiddenVictoryPoints > 0 ? (
+                  <Tooltip align="right" content={`You have ${player.hiddenVictoryPoints} hidden VP from dev cards (${player.victoryPoints + player.hiddenVictoryPoints} total)`}>
+                    <span className="text-yellow-400 font-bold text-sm cursor-help">{player.victoryPoints}VP</span>
+                  </Tooltip>
+                ) : (
+                  <span className="text-yellow-400 font-bold text-sm">{player.victoryPoints}VP</span>
                 )}
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1 ml-5">
+                <span
+                  className={`px-1 rounded ${hasLongestRoad ? "bg-blue-900 text-blue-300" : "text-gray-500"}`}
+                  title={`Road length: ${player.longestRoadLength}${hasLongestRoad ? " (Longest Road!)" : ""}`}
+                >
+                  🛤️{player.longestRoadLength}
+                </span>
                 <span
                   className={`px-1 rounded ${hasLargestArmy ? "bg-red-900 text-red-300" : "text-gray-500"}`}
                   title={`Knights played: ${player.playedKnights}${hasLargestArmy ? " (Largest Army!)" : ""}`}
@@ -67,13 +74,6 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                 <span className="text-gray-500" title="Development Cards">
                   📜{player.developmentCards.length}
                 </span>
-                {isMe && player.hiddenVictoryPoints > 0 ? (
-                  <Tooltip align="right" content={`You have ${player.hiddenVictoryPoints} hidden VP from dev cards (${player.victoryPoints + player.hiddenVictoryPoints} total)`}>
-                    <span className="text-yellow-400 font-bold cursor-help">{player.victoryPoints}VP</span>
-                  </Tooltip>
-                ) : (
-                  <span className="text-yellow-400 font-bold">{player.victoryPoints}VP</span>
-                )}
               </div>
             </div>
           );

@@ -106,6 +106,8 @@ export const useGameStore = create<GameStore>((set) => ({
         const newPlayer = gameState.players.find((p) => p.id === prev.playerId);
         if (prevPlayer && newPlayer && newPlayer.newDevCards.length > prevPlayer.newDevCards.length) {
           drawnDevCard = newPlayer.newDevCards[newPlayer.newDevCards.length - 1];
+        } else if (prevPlayer && newPlayer && newPlayer.hiddenVictoryPoints > prevPlayer.hiddenVictoryPoints) {
+          drawnDevCard = DevelopmentCardType.VictoryPoint;
         }
       }
 

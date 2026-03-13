@@ -134,7 +134,7 @@ function getCurrentPlayer(state: GameState): PlayerState {
 }
 
 function advanceSetupTurn(state: GameState): GameState {
-  const newState = structuredClone(state);
+  let newState = structuredClone(state);
   const numPlayers = newState.players.length;
 
   // Reset for the next player's turn
@@ -158,6 +158,7 @@ function advanceSetupTurn(state: GameState): GameState {
       newState.turnPhase = TurnPhase.PreRoll;
       newState.currentPlayerIndex = 0;
       newState.turnNumber = 1;
+      newState = updateSpecialCards(newState);
       const firstPlayer = newState.players[0].name;
       log(newState, `Setup complete! ${firstPlayer} goes first.`);
     }
