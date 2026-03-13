@@ -77,7 +77,13 @@ export function createGame(
   gameId: string,
   players: { id: string; name: string }[]
 ): GameState {
-  const playerStates = players.map((p, i) => createPlayer(p.id, p.name, i));
+  // Fisher-Yates shuffle to randomize turn order
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const playerStates = shuffled.map((p, i) => createPlayer(p.id, p.name, i));
 
   return {
     id: gameId,
@@ -147,12 +153,12 @@ function advanceSetupTurn(state: GameState): GameState {
     if (newState.currentPlayerIndex > 0) {
       newState.currentPlayerIndex -= 1;
     } else {
-      // Setup complete! Start the game
+      // Setup complete! Start the game — player 0 placed first, so they go first
       newState.phase = GamePhase.Playing;
       newState.turnPhase = TurnPhase.PreRoll;
-      newState.currentPlayerIndex = Math.floor(Math.random() * newState.players.length);
+      newState.currentPlayerIndex = 0;
       newState.turnNumber = 1;
-      const firstPlayer = newState.players[newState.currentPlayerIndex].name;
+      const firstPlayer = newState.players[0].name;
       log(newState, `Setup complete! ${firstPlayer} goes first.`);
     }
   }
