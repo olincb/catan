@@ -55,14 +55,12 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
                     🛤️{player.longestRoadLength}
                   </span>
                 )}
-                {player.playedKnights > 0 && (
-                  <span
-                    className={`px-1 rounded ${hasLargestArmy ? "bg-red-900 text-red-300" : "text-gray-500"}`}
-                    title={`Knights played: ${player.playedKnights}${hasLargestArmy ? " (Largest Army!)" : ""}`}
-                  >
-                    ⚔️{player.playedKnights}
-                  </span>
-                )}
+                <span
+                  className={`px-1 rounded ${hasLargestArmy ? "bg-red-900 text-red-300" : "text-gray-500"}`}
+                  title={`Knights played: ${player.playedKnights}${hasLargestArmy ? " (Largest Army!)" : ""}`}
+                >
+                  ⚔️{player.playedKnights}
+                </span>
                 <span className="text-gray-500" title="Cards in hand">
                   🃏{totalResources(player.resources)}
                 </span>

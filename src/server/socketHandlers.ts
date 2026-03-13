@@ -203,16 +203,25 @@ export function setupSocketHandlers(io: Server): void {
         return;
       }
 
-      markPlayerReconnected(room.gameId, playerId);
-
-      socket.join(room.code);
-
       const state = getGameState(room.gameId);
       if (!state) {
         console.log(`Reconnect failed: game state not found for gameId=${room.gameId}`);
         socket.emit("error", { message: "Game state not found" });
         return;
       }
+
+      // Don't reconnect to a finished game — send back to lobby instead
+      if (state.phase === GamePhase.Finished) {
+        console.log(`Game finished, clearing gameId for room=${roomCode}`);
+        setGameId(room.code, undefined);
+        socket.join(room.code);
+        socket.emit("room_joined", { room: serializeRoom(room) });
+        return;
+      }
+
+      markPlayerReconnected(room.gameId, playerId);
+
+      socket.join(room.code);
 
       const sanitized = sanitizeStateForPlayer(state, playerId);
       socket.emit("game_reconnected", { state: sanitized, room: serializeRoom(room) });

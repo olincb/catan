@@ -150,9 +150,10 @@ function advanceSetupTurn(state: GameState): GameState {
       // Setup complete! Start the game
       newState.phase = GamePhase.Playing;
       newState.turnPhase = TurnPhase.PreRoll;
-      newState.currentPlayerIndex = 0;
+      newState.currentPlayerIndex = Math.floor(Math.random() * newState.players.length);
       newState.turnNumber = 1;
-      log(newState, "Setup complete! Game begins.");
+      const firstPlayer = newState.players[newState.currentPlayerIndex].name;
+      log(newState, `Setup complete! ${firstPlayer} goes first.`);
     }
   }
 
@@ -333,7 +334,7 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
   const total = dice[0] + dice[1];
 
   const playerName = getCurrentPlayer(newState).name;
-  log(newState, `${playerName} rolled ${dice[0]} + ${dice[1]} = ${total}`, playerId);
+  log(newState, `${playerName} rolled a ${total}`, playerId);
 
   if (total === 7) {
     // Check who must discard

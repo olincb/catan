@@ -79,6 +79,15 @@ export default function EdgeComponent({
           y1={y1}
           x2={x2}
           y2={y2}
+          stroke="#000"
+          strokeWidth={12}
+          strokeLinecap="round"
+        />
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
           stroke={color || "#333"}
           strokeWidth={8}
           strokeLinecap="round"

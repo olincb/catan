@@ -258,7 +258,9 @@ describe("Setup Phase", () => {
     // Should now be in Playing phase
     expect(state.phase).toBe(GamePhase.Playing);
     expect(state.turnPhase).toBe(TurnPhase.PreRoll);
-    expect(state.currentPlayerIndex).toBe(0);
+    // Starting player is randomized
+    expect(state.currentPlayerIndex).toBeGreaterThanOrEqual(0);
+    expect(state.currentPlayerIndex).toBeLessThan(state.players.length);
 
     // Each player should have 2 settlements and 2 roads
     const p1Settlements = state.board.vertices.filter(
