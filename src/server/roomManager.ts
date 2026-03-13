@@ -220,9 +220,7 @@ export function disconnectPlayer(
   const player = room.players.find((p) => p.socketId === socketId);
   if (!player) return null;
 
-  // Only use grace period if a game is in progress
-  if (!room.gameId) return null;
-
+  // Grace period — allow time for page reload reconnection
   playerToRoom.delete(socketId);
 
   // Start grace period timer

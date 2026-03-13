@@ -199,7 +199,13 @@ export function setupSocketHandlers(io: Server): void {
       const { room } = result;
 
       if (!room.gameId) {
-        socket.emit("error", { message: "No active game to reconnect to" });
+        // No active game — just send them to the lobby
+        socket.join(room.code);
+        socket.emit("room_joined", {
+          roomCode: room.code,
+          playerId,
+          room: serializeRoom(room),
+        });
         return;
       }
 
