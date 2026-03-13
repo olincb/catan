@@ -63,15 +63,17 @@ export default function VertexComponent({
         </g>
       );
     }
-    // City: stepped profile - lower house section + taller tower on the right
-    const s = size * 0.45;
+    // City: tower with peaked roof on left, lower wing on right
+    const s = size * 0.35;
+    const u = s * 0.5;
     const points = [
-      `${cx - s},${cy + s * 0.5}`,
-      `${cx + s},${cy + s * 0.5}`,
-      `${cx + s},${cy - s * 0.8}`,
-      `${cx + s * 0.3},${cy - s * 0.8}`,
-      `${cx + s * 0.3},${cy - s * 0.2}`,
-      `${cx - s},${cy - s * 0.2}`,
+      `${cx - 2*u},${cy + 2*u}`,
+      `${cx - 2*u},${cy - u}`,
+      `${cx - u},${cy - 2*u}`,
+      `${cx},${cy - u}`,
+      `${cx},${cy}`,
+      `${cx + 2*u},${cy}`,
+      `${cx + 2*u},${cy + 2*u}`,
     ].join(' ');
     return (
       <polygon
