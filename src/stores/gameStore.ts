@@ -93,6 +93,10 @@ export const useGameStore = create<GameStore>((set) => ({
   gameState: null,
   setGameState: (gameState) =>
     set((prev) => {
+      if (!gameState) {
+        return { gameState: null, selectedAction: null, roadBuildingEdges: [], pendingKnight: false, pendingRobberHex: null, pendingStealTargets: [], pendingRobberAction: null, drawnDevCard: null };
+      }
+
       const turnChanged =
         prev.gameState &&
         prev.gameState.currentPlayerIndex !== gameState.currentPlayerIndex;
