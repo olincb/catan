@@ -54,11 +54,14 @@ export function buyDevCard(
   p.resources = deductResources(p.resources, BUILDING_COSTS.developmentCard);
 
   const card = newState.developmentCardDeck.pop()!;
-  // Cards bought this turn can't be played this turn (except VP)
-  p.newDevCards.push(card);
 
   if (card === DevelopmentCardType.VictoryPoint) {
+    // VP cards count immediately and go straight to hand (no "wait a turn" restriction)
     p.hiddenVictoryPoints += 1;
+    p.developmentCards.push(card);
+  } else {
+    // Action cards can't be played until next turn
+    p.newDevCards.push(card);
   }
 
   return { state: newState, card };

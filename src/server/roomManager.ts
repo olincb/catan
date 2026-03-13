@@ -176,7 +176,7 @@ export function getPlayerBySocketId(socketId: string): RoomPlayer | undefined {
   return room.players.find((p) => p.socketId === socketId);
 }
 
-export function setGameId(code: string, gameId: string): void {
+export function setGameId(code: string, gameId: string | null): void {
   const room = rooms.get(code);
   if (room) room.gameId = gameId;
 }
@@ -220,9 +220,7 @@ export function disconnectPlayer(
   const player = room.players.find((p) => p.socketId === socketId);
   if (!player) return null;
 
-  // Only use grace period if a game is in progress
-  if (!room.gameId) return null;
-
+  // Grace period — allow time for page reload reconnection
   playerToRoom.delete(socketId);
 
   // Start grace period timer

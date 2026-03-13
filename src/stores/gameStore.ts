@@ -40,7 +40,7 @@ interface GameStore {
 
   // Game
   gameState: GameState | null;
-  setGameState: (state: GameState) => void;
+  setGameState: (state: GameState | null) => void;
 
   // Chat
   chatMessages: ChatMessage[];
@@ -93,6 +93,10 @@ export const useGameStore = create<GameStore>((set) => ({
   gameState: null,
   setGameState: (gameState) =>
     set((prev) => {
+      if (!gameState) {
+        return { gameState: null, selectedAction: null, roadBuildingEdges: [], pendingKnight: false, pendingRobberHex: null, pendingStealTargets: [], pendingRobberAction: null, drawnDevCard: null };
+      }
+
       const turnChanged =
         prev.gameState &&
         prev.gameState.currentPlayerIndex !== gameState.currentPlayerIndex;
@@ -106,6 +110,8 @@ export const useGameStore = create<GameStore>((set) => ({
         const newPlayer = gameState.players.find((p) => p.id === prev.playerId);
         if (prevPlayer && newPlayer && newPlayer.newDevCards.length > prevPlayer.newDevCards.length) {
           drawnDevCard = newPlayer.newDevCards[newPlayer.newDevCards.length - 1];
+        } else if (prevPlayer && newPlayer && newPlayer.hiddenVictoryPoints > prevPlayer.hiddenVictoryPoints) {
+          drawnDevCard = DevelopmentCardType.VictoryPoint;
         }
       }
 

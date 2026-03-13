@@ -77,10 +77,10 @@ export function sanitizeStateForPlayer(
 
   for (const player of sanitized.players) {
     if (player.id !== playerId) {
-      // Other players: hide dev card details but show count
-      player.developmentCards = [];
+      // Other players: preserve total dev card count but hide card types and VP info
+      const totalDevCards = player.developmentCards.length + player.newDevCards.length;
+      player.developmentCards = new Array(totalDevCards).fill(null);
       player.newDevCards = [];
-      // Hide hidden VP
       player.hiddenVictoryPoints = 0;
     }
   }

@@ -90,8 +90,11 @@ function initSocketListeners(socket: Socket): void {
   });
 
   socket.on("room_joined", ({ roomCode, playerId, room }) => {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    store().setReconnecting(false);
     store().setPlayerId(playerId);
     store().setRoom(room);
+    store().setGameState(null);
     saveSession(roomCode, playerId);
   });
 

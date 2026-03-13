@@ -77,7 +77,13 @@ export function createGame(
   gameId: string,
   players: { id: string; name: string }[]
 ): GameState {
-  const playerStates = players.map((p, i) => createPlayer(p.id, p.name, i));
+  // Fisher-Yates shuffle to randomize turn order
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const playerStates = shuffled.map((p, i) => createPlayer(p.id, p.name, i));
 
   return {
     id: gameId,
@@ -128,7 +134,7 @@ function getCurrentPlayer(state: GameState): PlayerState {
 }
 
 function advanceSetupTurn(state: GameState): GameState {
-  const newState = structuredClone(state);
+  let newState = structuredClone(state);
   const numPlayers = newState.players.length;
 
   // Reset for the next player's turn
@@ -147,12 +153,14 @@ function advanceSetupTurn(state: GameState): GameState {
     if (newState.currentPlayerIndex > 0) {
       newState.currentPlayerIndex -= 1;
     } else {
-      // Setup complete! Start the game
+      // Setup complete! Start the game — player 0 placed first, so they go first
       newState.phase = GamePhase.Playing;
       newState.turnPhase = TurnPhase.PreRoll;
       newState.currentPlayerIndex = 0;
       newState.turnNumber = 1;
-      log(newState, "Setup complete! Game begins.");
+      newState = updateSpecialCards(newState);
+      const firstPlayer = newState.players[0].name;
+      log(newState, `Setup complete! ${firstPlayer} goes first.`);
     }
   }
 
@@ -333,7 +341,7 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
   const total = dice[0] + dice[1];
 
   const playerName = getCurrentPlayer(newState).name;
-  log(newState, `${playerName} rolled ${dice[0]} + ${dice[1]} = ${total}`, playerId);
+  log(newState, `${playerName} rolled a ${total}`, playerId);
 
   if (total === 7) {
     // Check who must discard
