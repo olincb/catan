@@ -213,7 +213,7 @@ export function setupSocketHandlers(io: Server): void {
       // Don't reconnect to a finished game — send back to lobby instead
       if (state.phase === GamePhase.Finished) {
         console.log(`Game finished, clearing gameId for room=${roomCode}`);
-        setGameId(room.code, undefined);
+        setGameId(room.code, null);
         socket.join(room.code);
         socket.emit("room_joined", { room: serializeRoom(room) });
         return;

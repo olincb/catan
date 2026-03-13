@@ -176,7 +176,7 @@ export function getPlayerBySocketId(socketId: string): RoomPlayer | undefined {
   return room.players.find((p) => p.socketId === socketId);
 }
 
-export function setGameId(code: string, gameId: string | undefined): void {
+export function setGameId(code: string, gameId: string | null): void {
   const room = rooms.get(code);
   if (room) room.gameId = gameId;
 }
